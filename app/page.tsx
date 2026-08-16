@@ -11,8 +11,8 @@ const modulos = [
 export default function Home() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-16">
-      <h1 className="text-3xl font-bold">Arte Criativa</h1>
-      <p className="mt-2 text-neutral-600">
+      <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">Arte Criativa</h1>
+      <p className="mt-2 text-neutral-600 dark:text-neutral-400">
         Sistema de gestão para vendas de produtos artesanais.
       </p>
 
@@ -21,10 +21,10 @@ export default function Home() {
           <Link
             key={modulo.nome}
             href={modulo.href}
-            className="rounded-lg border border-neutral-200 p-4 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+            className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-600 dark:hover:bg-neutral-800"
           >
-            <h2 className="font-semibold">{modulo.nome}</h2>
-            <p className="mt-1 text-sm text-neutral-500">{modulo.descricao}</p>
+            <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">{modulo.nome}</h2>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{modulo.descricao}</p>
           </Link>
         ))}
       </div>

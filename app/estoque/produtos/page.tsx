@@ -93,7 +93,7 @@ export default function ProdutosPage() {
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="categoria">Categoria</Label>
@@ -110,7 +110,7 @@ export default function ProdutosPage() {
                 value={form.precoVenda}
                 onChange={(e) => setForm({ ...form, precoVenda: Number(e.target.value) })}
               />
-              {errosCampos.precoVenda && <p className="mt-1 text-xs text-red-600">{errosCampos.precoVenda}</p>}
+              {errosCampos.precoVenda && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.precoVenda}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -137,13 +137,13 @@ export default function ProdutosPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Carregando...</p>
       ) : produtos.length === 0 ? (
         <EmptyState mensagem="Nenhum produto cadastrado ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+            <thead className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 text-left text-xs uppercase text-neutral-500 dark:text-neutral-400">
               <tr>
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-4 py-3">Categoria</th>
@@ -156,24 +156,24 @@ export default function ProdutosPage() {
               {produtos.map((produto) => {
                 const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
                 return (
-                  <tr key={produto.id} className="border-b border-neutral-100 last:border-0">
-                    <td className="px-4 py-3 font-medium text-neutral-900">
+                  <tr key={produto.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+                    <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">
                       <Link href={`/estoque/produtos/${produto.id}`} className="hover:underline">
                         {produto.nome}
                       </Link>
-                      {!produto.ativo && <span className="ml-2 text-xs text-neutral-400">(inativo)</span>}
+                      {!produto.ativo && <span className="ml-2 text-xs text-neutral-400 dark:text-neutral-500">(inativo)</span>}
                     </td>
-                    <td className="px-4 py-3 text-neutral-600">{produto.categoria ?? "—"}</td>
-                    <td className="px-4 py-3 text-neutral-600">{formatarMoeda(produto.precoVenda)}</td>
-                    <td className={`px-4 py-3 ${estoqueBaixo ? "font-medium text-red-600" : "text-neutral-600"}`}>
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{produto.categoria ?? "—"}</td>
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarMoeda(produto.precoVenda)}</td>
+                    <td className={`px-4 py-3 ${estoqueBaixo ? "font-medium text-red-600 dark:text-red-400" : "text-neutral-600 dark:text-neutral-400"}`}>
                       {produto.estoqueAtual}
                       {estoqueBaixo && " ⚠"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/estoque/produtos/${produto.id}`} className="mr-3 text-neutral-600 hover:underline">
+                      <Link href={`/estoque/produtos/${produto.id}`} className="mr-3 text-neutral-600 dark:text-neutral-400 hover:underline">
                         Ver
                       </Link>
-                      <button onClick={() => excluir(produto)} className="text-red-600 hover:underline">
+                      <button onClick={() => excluir(produto)} className="text-red-600 dark:text-red-400 hover:underline">
                         Excluir
                       </button>
                     </td>

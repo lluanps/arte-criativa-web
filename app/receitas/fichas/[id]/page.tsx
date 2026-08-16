@@ -106,11 +106,11 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-neutral-500">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-neutral-500 dark:text-neutral-400">Carregando...</main>;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/receitas/fichas" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/receitas/fichas" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
         ← Fichas técnicas
       </Link>
       <PageHeader titulo={nome || "Ficha técnica"} />
@@ -130,12 +130,12 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                   </option>
                 ))}
               </Select>
-              {errosCampos.produtoId && <p className="mt-1 text-xs text-red-600">{errosCampos.produtoId}</p>}
+              {errosCampos.produtoId && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.produtoId}</p>}
             </div>
             <div>
               <Label htmlFor="nome">Nome da ficha *</Label>
               <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="rendimento">Rendimento (un.)</Label>
@@ -194,7 +194,7 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
             </Button>
           </div>
 
-          <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
+          <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 pt-4">
             <Button type="button" variant="danger" onClick={excluir} disabled={excluindo}>
               {excluindo ? "Excluindo..." : "Excluir ficha técnica"}
             </Button>

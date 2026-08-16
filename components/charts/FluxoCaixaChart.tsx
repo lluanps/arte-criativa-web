@@ -4,13 +4,15 @@ import { useState } from "react";
 import { formatarMoeda, formatarMoedaCompacta } from "@/lib/format";
 import { PontoFluxoCaixa } from "@/lib/charts";
 
-// Cores de status fixas (nunca seguem tema categórico): receita = "good",
-// despesa = "critical" — mesmo par usado nos Badge/StatCard do módulo Financeiro.
+// Cores de status fixas (nunca seguem tema categórico, nunca mudam entre claro/escuro):
+// receita = "good", despesa = "critical" — mesmo par usado nos Badge/StatCard do
+// módulo Financeiro. Grade/eixo/texto mudam com o tema via CSS custom property
+// (ver globals.css) — cascata pura, sem re-render em JS.
 const COR_RECEITA = "#0ca30c";
 const COR_DESPESA = "#d03b3b";
-const COR_GRADE = "#e1e0d9";
-const COR_EIXO = "#c3c2b7";
-const COR_TEXTO_MUTED = "#898781";
+const COR_GRADE = "var(--chart-grid)";
+const COR_EIXO = "var(--chart-axis)";
+const COR_TEXTO_MUTED = "var(--chart-muted)";
 
 const LARGURA = 720;
 const ALTURA = 280;
@@ -59,12 +61,12 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
   const hoverX = hoverIndex !== null ? MARGEM.left + hoverIndex * larguraBanda + larguraBanda / 2 : 0;
 
   if (pontos.length === 0) {
-    return <p className="py-8 text-center text-sm text-neutral-500">Sem lançamentos no período.</p>;
+    return <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">Sem lançamentos no período.</p>;
   }
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-4 text-xs text-neutral-600">
+      <div className="mb-3 flex items-center gap-4 text-xs text-neutral-600 dark:text-neutral-400">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: COR_RECEITA }} />
           Receita
@@ -128,17 +130,17 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
 
         {hover && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs shadow-md"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs shadow-md dark:border-neutral-700 dark:bg-neutral-800"
             style={{ left: hoverX, top: MARGEM.top }}
           >
-            <p className="mb-1 font-medium text-neutral-900">{hover.rotulo}</p>
-            <p className="flex items-center gap-1.5 text-neutral-700">
+            <p className="mb-1 font-medium text-neutral-900 dark:text-neutral-100">{hover.rotulo}</p>
+            <p className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300">
               <span className="inline-block h-0.5 w-3" style={{ backgroundColor: COR_RECEITA }} />
-              Receita <strong className="ml-auto text-neutral-900">{formatarMoeda(hover.receitas)}</strong>
+              Receita <strong className="ml-auto text-neutral-900 dark:text-neutral-100">{formatarMoeda(hover.receitas)}</strong>
             </p>
-            <p className="flex items-center gap-1.5 text-neutral-700">
+            <p className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300">
               <span className="inline-block h-0.5 w-3" style={{ backgroundColor: COR_DESPESA }} />
-              Despesa <strong className="ml-auto text-neutral-900">{formatarMoeda(hover.despesas)}</strong>
+              Despesa <strong className="ml-auto text-neutral-900 dark:text-neutral-100">{formatarMoeda(hover.despesas)}</strong>
             </p>
           </div>
         )}

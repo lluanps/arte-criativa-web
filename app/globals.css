@@ -1,3 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Tokens de chrome dos gráficos (grade, eixo, texto secundário, hue sequencial) —
+ * puro CSS custom property, sem depender de re-render em JS: a classe "dark" do
+ * next-themes fica na <html>, e o valor cai em cascata até o SVG. Cores de STATUS
+ * (receita/despesa) não entram aqui de propósito: são fixas e iguais nos dois modos
+ * (ver referencia da skill de dataviz), então ficam hardcoded direto nos componentes.
+ */
+:root {
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-muted: #898781;
+  --chart-text-secondary: #52514e;
+  --chart-sequential: #2a78d6;
+}
+
+.dark {
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-muted: #898781;
+  --chart-text-secondary: #c3c2b7;
+  --chart-sequential: #3987e5;
+}

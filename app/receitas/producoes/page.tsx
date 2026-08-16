@@ -72,7 +72,7 @@ export default function ProducoesPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/receitas" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/receitas" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
         ← Receitas / Produção
       </Link>
       <PageHeader
@@ -123,13 +123,13 @@ export default function ProducoesPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Carregando...</p>
       ) : producoes.length === 0 ? (
         <EmptyState mensagem="Nenhuma produção registrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+            <thead className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 text-left text-xs uppercase text-neutral-500 dark:text-neutral-400">
               <tr>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Produto</th>
@@ -140,12 +140,12 @@ export default function ProducoesPage() {
             </thead>
             <tbody>
               {producoes.map((p) => (
-                <tr key={p.id} className="border-b border-neutral-100 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600">{formatarDataHora(p.dataProducao)}</td>
-                  <td className="px-4 py-3 font-medium text-neutral-900">{p.produtoNome}</td>
-                  <td className="px-4 py-3 text-neutral-600">{p.quantidadeProduzida}</td>
-                  <td className="px-4 py-3 text-neutral-600">{formatarMoeda(p.custoTotal)}</td>
-                  <td className="px-4 py-3 text-neutral-600">{p.observacao ?? "—"}</td>
+                <tr key={p.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarDataHora(p.dataProducao)}</td>
+                  <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">{p.produtoNome}</td>
+                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{p.quantidadeProduzida}</td>
+                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarMoeda(p.custoTotal)}</td>
+                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{p.observacao ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
