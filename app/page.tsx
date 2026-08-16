@@ -1,9 +1,11 @@
+import Link from "next/link";
+
 const modulos = [
-  { nome: "Estoque", descricao: "Produtos, matérias-primas e movimentações" },
-  { nome: "Receitas", descricao: "Fichas técnicas e registro de produção" },
-  { nome: "Vendas", descricao: "Pedidos e vendas realizadas" },
-  { nome: "Financeiro", descricao: "Lançamentos, contas a pagar e a receber" },
-  { nome: "Tutoriais", descricao: "Passo a passo de produção" },
+  { nome: "Estoque", href: "/estoque", descricao: "Produtos, matérias-primas e movimentações" },
+  { nome: "Receitas", href: "/receitas", descricao: "Fichas técnicas e registro de produção" },
+  { nome: "Vendas", href: "/vendas", descricao: "Pedidos e vendas realizadas" },
+  { nome: "Financeiro", href: "/financeiro", descricao: "Lançamentos, contas a pagar e a receber" },
+  { nome: "Tutoriais", href: "/tutoriais", descricao: "Passo a passo de produção" },
 ];
 
 export default function Home() {
@@ -16,13 +18,14 @@ export default function Home() {
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         {modulos.map((modulo) => (
-          <div
+          <Link
             key={modulo.nome}
-            className="rounded-lg border border-neutral-200 p-4 shadow-sm"
+            href={modulo.href}
+            className="rounded-lg border border-neutral-200 p-4 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50"
           >
             <h2 className="font-semibold">{modulo.nome}</h2>
             <p className="mt-1 text-sm text-neutral-500">{modulo.descricao}</p>
-          </div>
+          </Link>
         ))}
       </div>
     </main>
