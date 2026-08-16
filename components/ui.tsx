@@ -89,6 +89,39 @@ export function LinkButton({ href, children, variant = "primary" }: { href: stri
   );
 }
 
+export function StatCard({
+  label,
+  valor,
+  tone = "default",
+}: {
+  label: string;
+  valor: string;
+  tone?: "default" | "success" | "danger" | "warning";
+}) {
+  const cores = {
+    default: "text-neutral-900",
+    success: "text-green-700",
+    danger: "text-red-700",
+    warning: "text-amber-700",
+  };
+  return (
+    <Card>
+      <p className="text-xs font-medium uppercase text-neutral-500">{label}</p>
+      <p className={`mt-1 text-2xl font-bold ${cores[tone]}`}>{valor}</p>
+    </Card>
+  );
+}
+
+export function Badge({ children, tone = "default" }: { children: React.ReactNode; tone?: "default" | "success" | "danger" | "warning" }) {
+  const cores = {
+    default: "bg-neutral-100 text-neutral-700",
+    success: "bg-green-100 text-green-800",
+    danger: "bg-red-100 text-red-800",
+    warning: "bg-amber-100 text-amber-800",
+  };
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cores[tone]}`}>{children}</span>;
+}
+
 export function EmptyState({ mensagem }: { mensagem: string }) {
   return (
     <div className="rounded-lg border border-dashed border-neutral-300 px-4 py-10 text-center text-sm text-neutral-500">
