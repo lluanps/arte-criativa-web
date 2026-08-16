@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { agruparDespesasPorCategoria, agruparFluxoCaixa } from "@/lib/charts";
 import { dataLocalISO, formatarData, formatarMoeda } from "@/lib/format";
-import { DashboardFinanceiroResponse } from "@/types/financeiro";
+import { DashboardFinanceiroResponse, LancamentoFinanceiroResponse } from "@/types/financeiro";
 import { Button, Card, ErrorBanner, Input, Label, LinkButton, PageHeader, StatCard } from "@/components/ui";
+import { DespesasPorCategoriaChart } from "@/components/charts/DespesasPorCategoriaChart";
+import { FluxoCaixaChart } from "@/components/charts/FluxoCaixaChart";
 
 function primeiroDiaDoMes(): string {
   const hoje = new Date();
@@ -15,6 +19,7 @@ export default function FinanceiroDashboardPage() {
   const [inicio, setInicio] = useState(primeiroDiaDoMes());
   const [fim, setFim] = useState(dataLocalISO());
   const [dashboard, setDashboard] = useState<DashboardFinanceiroResponse | null>(null);
+  const [lancamentos, setLancamentos] = useState<LancamentoFinanceiroResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -22,10 +27,12 @@ export default function FinanceiroDashboardPage() {
     setCarregando(true);
     setErro(null);
     try {
-      const dados = await api.get<DashboardFinanceiroResponse>(
-        `/financeiro/dashboard?inicio=${inicio}&fim=${fim}`
-      );
+      const [dados, dadosLancamentos] = await Promise.all([
+        api.get<DashboardFinanceiroResponse>(`/financeiro/dashboard?inicio=${inicio}&fim=${fim}`),
+        api.get<LancamentoFinanceiroResponse[]>(`/lancamentos-financeiros?inicio=${inicio}&fim=${fim}`),
+      ]);
       setDashboard(dados);
+      setLancamentos(dadosLancamentos);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar dashboard");
     } finally {
@@ -77,10 +84,12 @@ export default function FinanceiroDashboardPage() {
         </form>
       </Card>
 
-      {carregando || !dashboard ? (
+      {!dashboard && carregando ? (
         <p className="text-sm text-neutral-500">Carregando...</p>
-      ) : (
-        <>
+      ) : dashboard ? (
+        // Refetch (troca de período) segura o render anterior em opacidade reduzida
+        // em vez de desmontar tudo — sem flash de "Carregando...", sem pulo de layout.
+        <div className={carregando ? "opacity-50 transition-opacity" : "transition-opacity"}>
           <p className="mb-3 text-sm text-neutral-500">
             Período: {formatarData(dashboard.periodoInicio)} até {formatarData(dashboard.periodoFim)}
           </p>
@@ -100,8 +109,30 @@ export default function FinanceiroDashboardPage() {
               tone={dashboard.contasAtrasadas > 0 ? "danger" : "default"}
             />
           </div>
-        </>
-      )}
+
+          <div className="mt-6 grid gap-6">
+            <Card>
+              <div className="mb-1 flex items-center justify-between">
+                <h2 className="font-semibold text-neutral-900">Fluxo de caixa no período</h2>
+                <Link href="/financeiro/lancamentos" className="text-xs text-neutral-500 hover:underline">
+                  Ver lançamentos ↗
+                </Link>
+              </div>
+              <FluxoCaixaChart pontos={agruparFluxoCaixa(lancamentos, dashboard.periodoInicio, dashboard.periodoFim)} />
+            </Card>
+
+            <Card>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-semibold text-neutral-900">Despesas por categoria</h2>
+                <Link href="/financeiro/lancamentos" className="text-xs text-neutral-500 hover:underline">
+                  Ver lançamentos ↗
+                </Link>
+              </div>
+              <DespesasPorCategoriaChart fatias={agruparDespesasPorCategoria(lancamentos)} />
+            </Card>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

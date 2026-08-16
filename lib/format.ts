@@ -29,3 +29,22 @@ export function dataLocalISO(data: Date = new Date()): string {
   const dia = String(data.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
 }
+
+/**
+ * Converte uma data pura ("yyyy-MM-dd") num `Date` à meia-noite LOCAL — pra fazer
+ * aritmética de dias (diferença, iteração) sem cair no mesmo problema de fuso que
+ * `formatarData`/`dataLocalISO` evitam. Nunca use `new Date(iso)` diretamente com uma
+ * string de data pura.
+ */
+export function parseDataLocal(data: string): Date {
+  const [ano, mes, dia] = data.split("-").map(Number);
+  return new Date(ano, mes - 1, dia);
+}
+
+/** Valor monetário compacto pra eixos/rótulos de gráfico: R$ 1,2 mil / R$ 3,4 mi. */
+export function formatarMoedaCompacta(valor: number): string {
+  const abs = Math.abs(valor);
+  if (abs >= 1_000_000) return `R$ ${(valor / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+  if (abs >= 1_000) return `R$ ${(valor / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  return `R$ ${Math.round(valor).toLocaleString("pt-BR")}`;
+}
