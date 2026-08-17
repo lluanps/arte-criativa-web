@@ -26,6 +26,7 @@ export default function ContasPage() {
   const [erro, setErro] = useState<string | null>(null);
 
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [tipo, setTipo] = useState<TipoConta>("PAGAR");
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState(0);
@@ -63,17 +64,32 @@ export default function ContasPage() {
     setValor(0);
     setVencimento(dataLocalISO());
     setMostrarForm(false);
+    setEditandoId(null);
     setErrosCampos({});
   }
 
-  async function criar(e: React.FormEvent) {
+  function iniciarEdicao(conta: ContaResponse) {
+    setEditandoId(conta.id);
+    setTipo(conta.tipo);
+    setDescricao(conta.descricao);
+    setValor(conta.valor);
+    setVencimento(conta.vencimento);
+    setMostrarForm(true);
+    setErrosCampos({});
+  }
+
+  async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setErrosCampos({});
     const request: ContaRequest = { tipo, descricao, valor, vencimento };
     setSalvando(true);
     try {
-      await api.post("/contas", request);
+      if (editandoId !== null) {
+        await api.put(`/contas/${editandoId}`, request);
+      } else {
+        await api.post("/contas", request);
+      }
       resetarForm();
       await carregar();
     } catch (e) {
@@ -81,7 +97,7 @@ export default function ContasPage() {
         setErro(e.message);
         setErrosCampos(e.campos ?? {});
       } else {
-        setErro("Erro ao criar conta");
+        setErro(editandoId !== null ? "Erro ao salvar conta" : "Erro ao criar conta");
       }
     } finally {
       setSalvando(false);
@@ -116,14 +132,19 @@ export default function ContasPage() {
       </Link>
       <PageHeader
         titulo="Contas a pagar / receber"
-        acao={<Button onClick={() => setMostrarForm((v) => !v)}>{mostrarForm ? "Cancelar" : "Nova conta"}</Button>}
+        acao={
+          <Button onClick={() => (mostrarForm ? resetarForm() : setMostrarForm(true))}>
+            {mostrarForm ? "Cancelar" : "Nova conta"}
+          </Button>
+        }
       />
 
       {erro && <ErrorBanner mensagem={erro} />}
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
+          <h2 className="mb-4 text-lg font-semibold">{editandoId !== null ? "Editar conta" : "Nova conta"}</h2>
+          <form onSubmit={salvar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="tipo">Tipo</Label>
               <Select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoConta)}>
@@ -155,7 +176,7 @@ export default function ContasPage() {
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={salvando}>
-                {salvando ? "Salvando..." : "Salvar conta"}
+                {salvando ? "Salvando..." : editandoId !== null ? "Salvar alterações" : "Salvar conta"}
               </Button>
             </div>
           </form>
@@ -203,12 +224,15 @@ export default function ContasPage() {
                   <td className="px-5 py-4">
                     <Badge tone={CORES_STATUS[c.status]}>{LABEL_STATUS[c.status]}</Badge>
                   </td>
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-5 py-4 text-right whitespace-nowrap">
                     {c.status !== "PAGO" && (
                       <button onClick={() => marcarComoPaga(c)} className="mr-3 text-ink-secondary hover:underline">
                         Marcar como paga
                       </button>
                     )}
+                    <button onClick={() => iniciarEdicao(c)} className="mr-3 text-ink-secondary hover:underline">
+                      Editar
+                    </button>
                     <button onClick={() => excluir(c)} className="text-critical hover:underline">
                       Excluir
                     </button>

@@ -3,9 +3,21 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { formatarMoeda } from "@/lib/format";
 import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
-import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+
+/**
+ * Faixas de saúde de margem pra artesanato: abaixo de 15% mal cobre imprevisto,
+ * 15-40% é sustentável mas apertado, acima de 40% é saudável pro tipo de negócio.
+ */
+function tomDaMargem(percentual: number | null): "default" | "success" | "warning" | "danger" {
+  if (percentual === null) return "default";
+  if (percentual < 15) return "danger";
+  if (percentual < 40) return "warning";
+  return "success";
+}
 
 interface LinhaItem {
   materiaPrimaId: number | "";
@@ -217,7 +229,8 @@ export default function FichasTecnicasPage() {
                 <th className="px-5 py-4">Nome</th>
                 <th className="px-5 py-4">Produto</th>
                 <th className="px-5 py-4">Rendimento</th>
-                <th className="px-5 py-4">Itens</th>
+                <th className="px-5 py-4">Custo/un.</th>
+                <th className="px-5 py-4">Margem</th>
                 <th className="px-5 py-4"></th>
               </tr>
             </thead>
@@ -231,7 +244,12 @@ export default function FichasTecnicasPage() {
                   </td>
                   <td className="px-5 py-4 text-ink-secondary">{r.produtoNome}</td>
                   <td className="px-5 py-4 text-ink-secondary">{r.rendimento}</td>
-                  <td className="px-5 py-4 text-ink-secondary">{r.itens.length}</td>
+                  <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(r.custoProducao)}</td>
+                  <td className="px-5 py-4">
+                    <Badge tone={tomDaMargem(r.margemPercentual)}>
+                      {r.margemPercentual !== null ? `${r.margemPercentual}%` : "—"}
+                    </Badge>
+                  </td>
                   <td className="px-5 py-4 text-right">
                     <Link href={`/receitas/fichas/${r.id}`} className="text-ink-secondary hover:underline">
                       Ver

@@ -13,6 +13,7 @@ export default function LancamentosPage() {
   const [erro, setErro] = useState<string | null>(null);
 
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [tipo, setTipo] = useState<TipoLancamento>("DESPESA");
   const [categoria, setCategoria] = useState("");
   const [valor, setValor] = useState(0);
@@ -45,17 +46,33 @@ export default function LancamentosPage() {
     setDescricao("");
     setDataLancamento(dataLocalISO());
     setMostrarForm(false);
+    setEditandoId(null);
     setErrosCampos({});
   }
 
-  async function criar(e: React.FormEvent) {
+  function iniciarEdicao(lancamento: LancamentoFinanceiroResponse) {
+    setEditandoId(lancamento.id);
+    setTipo(lancamento.tipo);
+    setCategoria(lancamento.categoria);
+    setValor(lancamento.valor);
+    setDescricao(lancamento.descricao ?? "");
+    setDataLancamento(lancamento.dataLancamento);
+    setMostrarForm(true);
+    setErrosCampos({});
+  }
+
+  async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setErrosCampos({});
     const request: LancamentoFinanceiroRequest = { tipo, categoria, valor, descricao: descricao || null, dataLancamento };
     setSalvando(true);
     try {
-      await api.post("/lancamentos-financeiros", request);
+      if (editandoId !== null) {
+        await api.put(`/lancamentos-financeiros/${editandoId}`, request);
+      } else {
+        await api.post("/lancamentos-financeiros", request);
+      }
       resetarForm();
       await carregar();
     } catch (e) {
@@ -63,7 +80,7 @@ export default function LancamentosPage() {
         setErro(e.message);
         setErrosCampos(e.campos ?? {});
       } else {
-        setErro("Erro ao criar lançamento");
+        setErro(editandoId !== null ? "Erro ao salvar lançamento" : "Erro ao criar lançamento");
       }
     } finally {
       setSalvando(false);
@@ -89,14 +106,19 @@ export default function LancamentosPage() {
       <PageHeader
         titulo="Lançamentos"
         descricao="Receitas e despesas. Os gerados automaticamente (ex: por uma venda) não podem ser editados aqui."
-        acao={<Button onClick={() => setMostrarForm((v) => !v)}>{mostrarForm ? "Cancelar" : "Novo lançamento"}</Button>}
+        acao={
+          <Button onClick={() => (mostrarForm ? resetarForm() : setMostrarForm(true))}>
+            {mostrarForm ? "Cancelar" : "Novo lançamento"}
+          </Button>
+        }
       />
 
       {erro && <ErrorBanner mensagem={erro} />}
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
+          <h2 className="mb-4 text-lg font-semibold">{editandoId !== null ? "Editar lançamento" : "Novo lançamento"}</h2>
+          <form onSubmit={salvar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="tipo">Tipo</Label>
               <Select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoLancamento)}>
@@ -138,7 +160,7 @@ export default function LancamentosPage() {
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={salvando}>
-                {salvando ? "Salvando..." : "Salvar lançamento"}
+                {salvando ? "Salvando..." : editandoId !== null ? "Salvar alterações" : "Salvar lançamento"}
               </Button>
             </div>
           </form>
@@ -172,11 +194,16 @@ export default function LancamentosPage() {
                   <td className="px-5 py-4 font-medium text-ink">{l.categoria}</td>
                   <td className="px-5 py-4 text-ink-secondary">{l.descricao ?? "—"}</td>
                   <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(l.valor)}</td>
-                  <td className="px-5 py-4 text-right">
+                  <td className="px-5 py-4 text-right whitespace-nowrap">
                     {l.origem === "MANUAL" ? (
-                      <button onClick={() => excluir(l)} className="text-critical hover:underline">
-                        Excluir
-                      </button>
+                      <>
+                        <button onClick={() => iniciarEdicao(l)} className="mr-3 text-ink-secondary hover:underline">
+                          Editar
+                        </button>
+                        <button onClick={() => excluir(l)} className="text-critical hover:underline">
+                          Excluir
+                        </button>
+                      </>
                     ) : (
                       <Badge>gerado por {l.origem.toLowerCase()}</Badge>
                     )}

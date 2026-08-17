@@ -25,6 +25,9 @@ export interface ReceitaResponse {
   nome: string;
   rendimento: number;
   itens: ReceitaItemResponse[];
+  custoProducao: number;
+  margemLucro: number;
+  margemPercentual: number | null;
   criadoEm: string;
 }
 
