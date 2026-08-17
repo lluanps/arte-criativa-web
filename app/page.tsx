@@ -1,18 +1,19 @@
 import Link from "next/link";
+import { IconBag, IconBook, IconBox, IconClipboard, IconWallet } from "@/components/Icon";
 
 const modulos = [
-  { nome: "Estoque", href: "/estoque", descricao: "Produtos, matérias-primas e movimentações" },
-  { nome: "Receitas", href: "/receitas", descricao: "Fichas técnicas e registro de produção" },
-  { nome: "Vendas", href: "/vendas", descricao: "Pedidos e vendas realizadas" },
-  { nome: "Financeiro", href: "/financeiro", descricao: "Lançamentos, contas a pagar e a receber" },
-  { nome: "Tutoriais", href: "/tutoriais", descricao: "Passo a passo de produção" },
+  { nome: "Estoque", href: "/estoque", descricao: "Produtos, matérias-primas e movimentações", Icon: IconBox },
+  { nome: "Receitas", href: "/receitas", descricao: "Fichas técnicas e registro de produção", Icon: IconClipboard },
+  { nome: "Vendas", href: "/vendas", descricao: "Pedidos e vendas realizadas", Icon: IconBag },
+  { nome: "Financeiro", href: "/financeiro", descricao: "Lançamentos, contas a pagar e a receber", Icon: IconWallet },
+  { nome: "Tutoriais", href: "/tutoriais", descricao: "Passo a passo de produção", Icon: IconBook },
 ];
 
 export default function Home() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-16">
-      <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">Arte Criativa</h1>
-      <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+      <h1 className="text-3xl font-extrabold text-ink">Arte Criativa</h1>
+      <p className="mt-2 text-ink-secondary">
         Sistema de gestão para vendas de produtos artesanais.
       </p>
 
@@ -21,10 +22,15 @@ export default function Home() {
           <Link
             key={modulo.nome}
             href={modulo.href}
-            className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-600 dark:hover:bg-neutral-800"
+            className="flex items-start gap-3.5 rounded-2xl border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover"
           >
-            <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">{modulo.nome}</h2>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{modulo.descricao}</p>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-good-soft text-good">
+              <modulo.Icon className="h-[18px] w-[18px]" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-ink">{modulo.nome}</h2>
+              <p className="mt-1 text-sm text-ink-secondary">{modulo.descricao}</p>
+            </div>
           </Link>
         ))}
       </div>

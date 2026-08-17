@@ -126,7 +126,7 @@ export default function TutoriaisPage() {
               <div>
                 <Label htmlFor="titulo">Título *</Label>
                 <Input id="titulo" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-                {errosCampos.titulo && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.titulo}</p>}
+                {errosCampos.titulo && <p className="mt-1 text-xs text-critical">{errosCampos.titulo}</p>}
               </div>
               <div>
                 <Label htmlFor="categoria">Categoria</Label>
@@ -208,7 +208,7 @@ export default function TutoriaisPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">Carregando...</p>
+        <p className="text-sm text-ink-secondary">Carregando...</p>
       ) : tutoriais.length === 0 ? (
         <EmptyState mensagem="Nenhum tutorial cadastrado ainda." />
       ) : (
@@ -217,13 +217,13 @@ export default function TutoriaisPage() {
             <Link
               key={t.id}
               href={`/tutoriais/${t.id}`}
-              className="block rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors hover:border-neutral-400 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+              className="block rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover hover:bg-surface-hover"
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{t.titulo}</h3>
-                <span className="text-xs text-neutral-400 dark:text-neutral-500">{t.passos.length} passo(s)</span>
+                <h3 className="font-semibold text-ink">{t.titulo}</h3>
+                <span className="text-xs text-ink-faint">{t.passos.length} passo(s)</span>
               </div>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-ink-secondary">
                 {t.categoria ?? "Sem categoria"}
                 {t.produtoRelacionadoNome && ` · ${t.produtoRelacionadoNome}`}
               </p>

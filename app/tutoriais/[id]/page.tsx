@@ -117,11 +117,11 @@ export default function TutorialDetalhePage({ params }: { params: Promise<{ id: 
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-neutral-500 dark:text-neutral-400">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-ink-secondary">Carregando...</main>;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/tutoriais" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
+      <Link href="/tutoriais" className="text-sm text-ink-secondary hover:underline">
         ← Tutoriais
       </Link>
       <PageHeader titulo={titulo || "Tutorial"} />
@@ -134,7 +134,7 @@ export default function TutorialDetalhePage({ params }: { params: Promise<{ id: 
             <div>
               <Label htmlFor="titulo">Título *</Label>
               <Input id="titulo" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-              {errosCampos.titulo && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.titulo}</p>}
+              {errosCampos.titulo && <p className="mt-1 text-xs text-critical">{errosCampos.titulo}</p>}
             </div>
             <div>
               <Label htmlFor="categoria">Categoria</Label>
@@ -206,7 +206,7 @@ export default function TutorialDetalhePage({ params }: { params: Promise<{ id: 
             </Button>
           </div>
 
-          <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-800 pt-4">
+          <div className="flex items-center justify-between border-t border-hairline pt-4">
             <Button type="button" variant="danger" onClick={excluir} disabled={excluindo}>
               {excluindo ? "Excluindo..." : "Excluir tutorial"}
             </Button>

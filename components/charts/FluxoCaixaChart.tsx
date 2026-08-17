@@ -4,15 +4,15 @@ import { useState } from "react";
 import { formatarMoeda, formatarMoedaCompacta } from "@/lib/format";
 import { PontoFluxoCaixa } from "@/lib/charts";
 
-// Cores de status fixas (nunca seguem tema categórico, nunca mudam entre claro/escuro):
-// receita = "good", despesa = "critical" — mesmo par usado nos Badge/StatCard do
-// módulo Financeiro. Grade/eixo/texto mudam com o tema via CSS custom property
-// (ver globals.css) — cascata pura, sem re-render em JS.
-const COR_RECEITA = "#0ca30c";
-const COR_DESPESA = "#d03b3b";
-const COR_GRADE = "var(--chart-grid)";
-const COR_EIXO = "var(--chart-axis)";
-const COR_TEXTO_MUTED = "var(--chart-muted)";
+// Receita/despesa usam os mesmos tokens de status "good"/"critical" do resto do app
+// (Badge, StatCard) — no design system do ateliê eles já mudam de tom entre as duas
+// atmosferas (dia/noite), então o gráfico acompanha em vez de fixar um hex cru.
+// Grade/eixo/texto também via CSS custom property — cascata pura, sem re-render em JS.
+const COR_RECEITA = "var(--good)";
+const COR_DESPESA = "var(--critical)";
+const COR_GRADE = "var(--hairline)";
+const COR_EIXO = "var(--ink-faint)";
+const COR_TEXTO_MUTED = "var(--ink-faint)";
 
 const LARGURA = 720;
 const ALTURA = 280;
@@ -61,12 +61,12 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
   const hoverX = hoverIndex !== null ? MARGEM.left + hoverIndex * larguraBanda + larguraBanda / 2 : 0;
 
   if (pontos.length === 0) {
-    return <p className="py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">Sem lançamentos no período.</p>;
+    return <p className="py-8 text-center text-sm text-ink-secondary">Sem lançamentos no período.</p>;
   }
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-4 text-xs text-neutral-600 dark:text-neutral-400">
+      <div className="mb-3 flex items-center gap-4 text-xs text-ink-secondary">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: COR_RECEITA }} />
           Receita
@@ -130,17 +130,17 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
 
         {hover && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs shadow-md dark:border-neutral-700 dark:bg-neutral-800"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg border border-hairline bg-surface px-3 py-2 text-xs shadow-md"
             style={{ left: hoverX, top: MARGEM.top }}
           >
-            <p className="mb-1 font-medium text-neutral-900 dark:text-neutral-100">{hover.rotulo}</p>
-            <p className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300">
+            <p className="mb-1 font-medium text-ink">{hover.rotulo}</p>
+            <p className="flex items-center gap-1.5 text-ink-secondary">
               <span className="inline-block h-0.5 w-3" style={{ backgroundColor: COR_RECEITA }} />
-              Receita <strong className="ml-auto text-neutral-900 dark:text-neutral-100">{formatarMoeda(hover.receitas)}</strong>
+              Receita <strong className="ml-auto text-ink">{formatarMoeda(hover.receitas)}</strong>
             </p>
-            <p className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300">
+            <p className="flex items-center gap-1.5 text-ink-secondary">
               <span className="inline-block h-0.5 w-3" style={{ backgroundColor: COR_DESPESA }} />
-              Despesa <strong className="ml-auto text-neutral-900 dark:text-neutral-100">{formatarMoeda(hover.despesas)}</strong>
+              Despesa <strong className="ml-auto text-ink">{formatarMoeda(hover.despesas)}</strong>
             </p>
           </div>
         )}

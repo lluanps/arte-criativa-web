@@ -111,7 +111,7 @@ export default function ContasPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/financeiro" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
+      <Link href="/financeiro" className="text-sm text-ink-secondary hover:underline">
         ← Financeiro
       </Link>
       <PageHeader
@@ -134,7 +134,7 @@ export default function ContasPage() {
             <div>
               <Label htmlFor="descricao">Descrição *</Label>
               <Input id="descricao" required value={descricao} onChange={(e) => setDescricao(e.target.value)} />
-              {errosCampos.descricao && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.descricao}</p>}
+              {errosCampos.descricao && <p className="mt-1 text-xs text-critical">{errosCampos.descricao}</p>}
             </div>
             <div>
               <Label htmlFor="valor">Valor *</Label>
@@ -147,7 +147,7 @@ export default function ContasPage() {
                 value={valor}
                 onChange={(e) => setValor(Number(e.target.value))}
               />
-              {errosCampos.valor && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.valor}</p>}
+              {errosCampos.valor && <p className="mt-1 text-xs text-critical">{errosCampos.valor}</p>}
             </div>
             <div>
               <Label htmlFor="vencimento">Vencimento *</Label>
@@ -168,7 +168,7 @@ export default function ContasPage() {
             key={opcao || "todas"}
             onClick={() => mudarFiltro(opcao)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              filtroTipo === opcao ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900" : "border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              filtroTipo === opcao ? "bg-accent text-accent-ink" : "border border-hairline text-ink-secondary hover:bg-surface-hover"
             }`}
           >
             {opcao === "" ? "Todas" : opcao === "PAGAR" ? "A pagar" : "A receber"}
@@ -177,13 +177,13 @@ export default function ContasPage() {
       </div>
 
       {carregando ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">Carregando...</p>
+        <p className="text-sm text-ink-secondary">Carregando...</p>
       ) : contas.length === 0 ? (
         <EmptyState mensagem="Nenhuma conta cadastrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 text-left text-xs uppercase text-neutral-500 dark:text-neutral-400">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
               <tr>
                 <th className="px-4 py-3">Vencimento</th>
                 <th className="px-4 py-3">Tipo</th>
@@ -195,21 +195,21 @@ export default function ContasPage() {
             </thead>
             <tbody>
               {contas.map((c) => (
-                <tr key={c.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarData(c.vencimento)}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{c.tipo === "PAGAR" ? "A pagar" : "A receber"}</td>
-                  <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">{c.descricao}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarMoeda(c.valor)}</td>
+                <tr key={c.id} className="border-b border-hairline last:border-0">
+                  <td className="px-4 py-3 text-ink-secondary">{formatarData(c.vencimento)}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{c.tipo === "PAGAR" ? "A pagar" : "A receber"}</td>
+                  <td className="px-4 py-3 font-medium text-ink">{c.descricao}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(c.valor)}</td>
                   <td className="px-4 py-3">
                     <Badge tone={CORES_STATUS[c.status]}>{LABEL_STATUS[c.status]}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {c.status !== "PAGO" && (
-                      <button onClick={() => marcarComoPaga(c)} className="mr-3 text-neutral-600 dark:text-neutral-400 hover:underline">
+                      <button onClick={() => marcarComoPaga(c)} className="mr-3 text-ink-secondary hover:underline">
                         Marcar como paga
                       </button>
                     )}
-                    <button onClick={() => excluir(c)} className="text-red-600 dark:text-red-400 hover:underline">
+                    <button onClick={() => excluir(c)} className="text-critical hover:underline">
                       Excluir
                     </button>
                   </td>

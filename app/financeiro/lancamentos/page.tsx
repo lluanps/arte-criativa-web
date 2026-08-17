@@ -83,7 +83,7 @@ export default function LancamentosPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/financeiro" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
+      <Link href="/financeiro" className="text-sm text-ink-secondary hover:underline">
         ← Financeiro
       </Link>
       <PageHeader
@@ -107,7 +107,7 @@ export default function LancamentosPage() {
             <div>
               <Label htmlFor="categoria">Categoria *</Label>
               <Input id="categoria" required value={categoria} onChange={(e) => setCategoria(e.target.value)} />
-              {errosCampos.categoria && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.categoria}</p>}
+              {errosCampos.categoria && <p className="mt-1 text-xs text-critical">{errosCampos.categoria}</p>}
             </div>
             <div>
               <Label htmlFor="valor">Valor *</Label>
@@ -120,7 +120,7 @@ export default function LancamentosPage() {
                 value={valor}
                 onChange={(e) => setValor(Number(e.target.value))}
               />
-              {errosCampos.valor && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.valor}</p>}
+              {errosCampos.valor && <p className="mt-1 text-xs text-critical">{errosCampos.valor}</p>}
             </div>
             <div>
               <Label htmlFor="dataLancamento">Data *</Label>
@@ -146,13 +146,13 @@ export default function LancamentosPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">Carregando...</p>
+        <p className="text-sm text-ink-secondary">Carregando...</p>
       ) : lancamentos.length === 0 ? (
         <EmptyState mensagem="Nenhum lançamento registrado ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 text-left text-xs uppercase text-neutral-500 dark:text-neutral-400">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
               <tr>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Tipo</th>
@@ -164,17 +164,17 @@ export default function LancamentosPage() {
             </thead>
             <tbody>
               {lancamentos.map((l) => (
-                <tr key={l.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarData(l.dataLancamento)}</td>
+                <tr key={l.id} className="border-b border-hairline last:border-0">
+                  <td className="px-4 py-3 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
                   <td className="px-4 py-3">
                     <Badge tone={l.tipo === "RECEITA" ? "success" : "danger"}>{l.tipo === "RECEITA" ? "Receita" : "Despesa"}</Badge>
                   </td>
-                  <td className="px-4 py-3 font-medium text-neutral-900 dark:text-neutral-100">{l.categoria}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{l.descricao ?? "—"}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarMoeda(l.valor)}</td>
+                  <td className="px-4 py-3 font-medium text-ink">{l.categoria}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{l.descricao ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(l.valor)}</td>
                   <td className="px-4 py-3 text-right">
                     {l.origem === "MANUAL" ? (
-                      <button onClick={() => excluir(l)} className="text-red-600 dark:text-red-400 hover:underline">
+                      <button onClick={() => excluir(l)} className="text-critical hover:underline">
                         Excluir
                       </button>
                     ) : (

@@ -102,7 +102,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-4xl px-6 py-10 text-sm text-neutral-500 dark:text-neutral-400">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-4xl px-6 py-10 text-sm text-ink-secondary">Carregando...</main>;
   if (!materiaPrima || !form)
     return (
       <main className="mx-auto max-w-4xl px-6 py-10">
@@ -112,7 +112,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/estoque/materias-primas" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
+      <Link href="/estoque/materias-primas" className="text-sm text-ink-secondary hover:underline">
         ← Matérias-primas
       </Link>
       <PageHeader
@@ -129,7 +129,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-xs text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
@@ -139,7 +139,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 value={form.unidadeMedida}
                 onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
               />
-              {errosCampos.unidadeMedida && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.unidadeMedida}</p>}
+              {errosCampos.unidadeMedida && <p className="mt-1 text-xs text-critical">{errosCampos.unidadeMedida}</p>}
             </div>
             <div>
               <Label htmlFor="custoUnitario">Custo unitário *</Label>
@@ -152,7 +152,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 value={form.custoUnitario}
                 onChange={(e) => setForm({ ...form, custoUnitario: Number(e.target.value) })}
               />
-              {errosCampos.custoUnitario && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.custoUnitario}</p>}
+              {errosCampos.custoUnitario && <p className="mt-1 text-xs text-critical">{errosCampos.custoUnitario}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -243,7 +243,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 text-left text-xs uppercase text-neutral-500 dark:text-neutral-400">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
               <tr>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Tipo</th>
@@ -254,14 +254,14 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
             </thead>
             <tbody>
               {movimentacoes.map((mov) => (
-                <tr key={mov.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarDataHora(mov.dataMovimentacao)}</td>
-                  <td className={`px-4 py-3 font-medium ${mov.tipo === "ENTRADA" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+                <tr key={mov.id} className="border-b border-hairline last:border-0">
+                  <td className="px-4 py-3 text-ink-secondary">{formatarDataHora(mov.dataMovimentacao)}</td>
+                  <td className={`px-4 py-3 font-medium ${mov.tipo === "ENTRADA" ? "text-good" : "text-critical"}`}>
                     {mov.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                   </td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{mov.motivo}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{mov.quantidade}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{mov.observacao ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{mov.motivo}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{mov.quantidade}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{mov.observacao ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { IconMonitor, IconMoon, IconSun } from "@/components/Icon";
 
 const OPCOES = [
-  { valor: "light", rotulo: "Claro", icone: "☀️" },
-  { valor: "dark", rotulo: "Escuro", icone: "🌙" },
-  { valor: "system", rotulo: "Sistema", icone: "🖥️" },
+  { valor: "light", rotulo: "Claro", Icone: IconSun },
+  { valor: "dark", rotulo: "Escuro", Icone: IconMoon },
+  { valor: "system", rotulo: "Sistema", Icone: IconMonitor },
 ] as const;
 
 /**
@@ -21,7 +22,7 @@ export function ThemeToggle() {
   useEffect(() => setMontado(true), []);
 
   if (!montado) {
-    return <div className="h-8 w-[92px] shrink-0" aria-hidden />;
+    return <div className="h-8 w-full shrink-0" aria-hidden />;
   }
 
   const atual = OPCOES.find((o) => o.valor === theme) ?? OPCOES[2];
@@ -35,11 +36,11 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={proximo}
-      className="flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+      className="flex w-full items-center gap-2 rounded-lg bg-sidebar-raised px-3 py-2 text-xs font-medium text-sidebar-ink-muted transition-colors hover:text-sidebar-ink"
       title={`Tema: ${atual.rotulo} (clique pra trocar)`}
       aria-label={`Tema atual: ${atual.rotulo}. Clique pra trocar.`}
     >
-      <span aria-hidden>{atual.icone}</span>
+      <atual.Icone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
       {atual.rotulo}
     </button>
   );

@@ -85,12 +85,12 @@ export default function FinanceiroDashboardPage() {
       </Card>
 
       {!dashboard && carregando ? (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">Carregando...</p>
+        <p className="text-sm text-ink-secondary">Carregando...</p>
       ) : dashboard ? (
         // Refetch (troca de período) segura o render anterior em opacidade reduzida
         // em vez de desmontar tudo — sem flash de "Carregando...", sem pulo de layout.
         <div className={carregando ? "opacity-50 transition-opacity" : "transition-opacity"}>
-          <p className="mb-3 text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="mb-3 text-sm text-ink-secondary">
             Período: {formatarData(dashboard.periodoInicio)} até {formatarData(dashboard.periodoFim)}
           </p>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -113,8 +113,8 @@ export default function FinanceiroDashboardPage() {
           <div className="mt-6 grid gap-6">
             <Card>
               <div className="mb-1 flex items-center justify-between">
-                <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Fluxo de caixa no período</h2>
-                <Link href="/financeiro/lancamentos" className="text-xs text-neutral-500 dark:text-neutral-400 hover:underline">
+                <h2 className="font-semibold text-ink">Fluxo de caixa no período</h2>
+                <Link href="/financeiro/lancamentos" className="text-xs text-ink-secondary hover:underline">
                   Ver lançamentos ↗
                 </Link>
               </div>
@@ -123,8 +123,8 @@ export default function FinanceiroDashboardPage() {
 
             <Card>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Despesas por categoria</h2>
-                <Link href="/financeiro/lancamentos" className="text-xs text-neutral-500 dark:text-neutral-400 hover:underline">
+                <h2 className="font-semibold text-ink">Despesas por categoria</h2>
+                <Link href="/financeiro/lancamentos" className="text-xs text-ink-secondary hover:underline">
                   Ver lançamentos ↗
                 </Link>
               </div>

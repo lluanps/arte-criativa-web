@@ -15,10 +15,10 @@ export default function ReceitasPage() {
           <Link
             key={secao.href}
             href={secao.href}
-            className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 shadow-sm transition-colors hover:border-neutral-400 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+            className="rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover hover:bg-surface-hover"
           >
             <h2 className="font-semibold">{secao.nome}</h2>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{secao.descricao}</p>
+            <p className="mt-1 text-sm text-ink-secondary">{secao.descricao}</p>
           </Link>
         ))}
       </div>

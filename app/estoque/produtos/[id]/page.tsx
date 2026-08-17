@@ -105,12 +105,12 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-4xl px-6 py-10 text-sm text-neutral-500 dark:text-neutral-400">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-4xl px-6 py-10 text-sm text-ink-secondary">Carregando...</main>;
   if (!produto || !form) return <main className="mx-auto max-w-4xl px-6 py-10"><ErrorBanner mensagem={erro ?? "Produto não encontrado"} /></main>;
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/estoque/produtos" className="text-sm text-neutral-500 dark:text-neutral-400 hover:underline">
+      <Link href="/estoque/produtos" className="text-sm text-ink-secondary hover:underline">
         ← Produtos
       </Link>
       <PageHeader
@@ -127,7 +127,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-xs text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="categoria">Categoria</Label>
@@ -144,7 +144,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                 value={form.precoVenda}
                 onChange={(e) => setForm({ ...form, precoVenda: Number(e.target.value) })}
               />
-              {errosCampos.precoVenda && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errosCampos.precoVenda}</p>}
+              {errosCampos.precoVenda && <p className="mt-1 text-xs text-critical">{errosCampos.precoVenda}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -162,7 +162,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               <button
                 type="button"
                 onClick={() => gerarDescricaoComChatGPT(form)}
-                className="mb-1.5 block text-xs font-medium text-neutral-600 hover:underline dark:text-neutral-400"
+                className="mb-1.5 block text-xs font-medium text-ink-secondary hover:underline"
               >
                 ✨ Gerar com ChatGPT
               </button>
@@ -170,7 +170,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
             </div>
             <div>
               <Label htmlFor="fotoUrl">URL da foto</Label>
-              <div className="mb-1.5 flex gap-3 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+              <div className="mb-1.5 flex gap-3 text-xs font-medium text-ink-secondary">
                 <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
                   🖼️ Gerar imagem com ChatGPT
                 </button>
@@ -185,7 +185,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                 onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })}
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <label className="flex items-center gap-2 text-sm text-ink-secondary">
               <input
                 type="checkbox"
                 checked={form.ativo ?? true}
@@ -267,7 +267,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/60 text-left text-xs uppercase text-neutral-500 dark:text-neutral-400">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
               <tr>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Tipo</th>
@@ -278,14 +278,14 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
             </thead>
             <tbody>
               {movimentacoes.map((mov) => (
-                <tr key={mov.id} className="border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{formatarDataHora(mov.dataMovimentacao)}</td>
-                  <td className={`px-4 py-3 font-medium ${mov.tipo === "ENTRADA" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+                <tr key={mov.id} className="border-b border-hairline last:border-0">
+                  <td className="px-4 py-3 text-ink-secondary">{formatarDataHora(mov.dataMovimentacao)}</td>
+                  <td className={`px-4 py-3 font-medium ${mov.tipo === "ENTRADA" ? "text-good" : "text-critical"}`}>
                     {mov.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                   </td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{mov.motivo}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{mov.quantidade}</td>
-                  <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">{mov.observacao ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{mov.motivo}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{mov.quantidade}</td>
+                  <td className="px-4 py-3 text-ink-secondary">{mov.observacao ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

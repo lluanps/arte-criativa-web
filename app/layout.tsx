@@ -15,10 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <body className="flex min-h-screen bg-paper text-ink">
         <ThemeProvider>
           <Nav />
-          {children}
+          <div className="min-w-0 flex-1">{children}</div>
         </ThemeProvider>
       </body>
     </html>
