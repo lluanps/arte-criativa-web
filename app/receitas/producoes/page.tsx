@@ -71,8 +71,8 @@ export default function ProducoesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/receitas" className="text-sm text-ink-secondary hover:underline">
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      <Link href="/receitas" className="text-base text-ink-secondary hover:underline">
         ← Receitas / Produção
       </Link>
       <PageHeader
@@ -85,7 +85,7 @@ export default function ProducoesPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={registrar} className="grid gap-4 sm:grid-cols-3">
+          <form onSubmit={registrar} className="grid gap-5 sm:grid-cols-3">
             <div>
               <Label htmlFor="produtoId">Produto *</Label>
               <Select id="produtoId" required value={produtoId} onChange={(e) => setProdutoId(Number(e.target.value))}>
@@ -123,29 +123,29 @@ export default function ProducoesPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-ink-secondary">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : producoes.length === 0 ? (
         <EmptyState mensagem="Nenhuma produção registrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Data</th>
-                <th className="px-4 py-3">Produto</th>
-                <th className="px-4 py-3">Quantidade</th>
-                <th className="px-4 py-3">Custo total</th>
-                <th className="px-4 py-3">Observação</th>
+                <th className="px-5 py-4">Data</th>
+                <th className="px-5 py-4">Produto</th>
+                <th className="px-5 py-4">Quantidade</th>
+                <th className="px-5 py-4">Custo total</th>
+                <th className="px-5 py-4">Observação</th>
               </tr>
             </thead>
             <tbody>
               {producoes.map((p) => (
                 <tr key={p.id} className="border-b border-hairline last:border-0">
-                  <td className="px-4 py-3 text-ink-secondary">{formatarDataHora(p.dataProducao)}</td>
-                  <td className="px-4 py-3 font-medium text-ink">{p.produtoNome}</td>
-                  <td className="px-4 py-3 text-ink-secondary">{p.quantidadeProduzida}</td>
-                  <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(p.custoTotal)}</td>
-                  <td className="px-4 py-3 text-ink-secondary">{p.observacao ?? "—"}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{formatarDataHora(p.dataProducao)}</td>
+                  <td className="px-5 py-4 font-medium text-ink">{p.produtoNome}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{p.quantidadeProduzida}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(p.custoTotal)}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{p.observacao ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -66,7 +66,7 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-4 text-xs text-ink-secondary">
+      <div className="mb-3 flex items-center gap-4 text-sm text-ink-secondary">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: COR_RECEITA }} />
           Receita
@@ -83,7 +83,7 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
             {ticks.map((tick) => (
               <g key={tick}>
                 <line x1={0} x2={LARGURA_UTIL} y1={y(tick)} y2={y(tick)} stroke={COR_GRADE} strokeWidth={1} />
-                <text x={-8} y={y(tick)} textAnchor="end" dominantBaseline="middle" fontSize={11} fill={COR_TEXTO_MUTED}>
+                <text x={-8} y={y(tick)} textAnchor="end" dominantBaseline="middle" fontSize={13} fill={COR_TEXTO_MUTED}>
                   {formatarMoedaCompacta(tick)}
                 </text>
               </g>
@@ -103,7 +103,7 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
                   <path d={pathBarra(xReceita, y(ponto.receitas), larguraBarra, alturaReceita)} fill={COR_RECEITA} opacity={hoverIndex === null || hoverIndex === index ? 1 : 0.45} />
                   <path d={pathBarra(xDespesa, y(ponto.despesas), larguraBarra, alturaDespesa)} fill={COR_DESPESA} opacity={hoverIndex === null || hoverIndex === index ? 1 : 0.45} />
                   {mostrarRotulo && (
-                    <text x={xBanda + larguraBanda / 2} y={ALTURA_UTIL + 16} textAnchor="middle" fontSize={11} fill={COR_TEXTO_MUTED}>
+                    <text x={xBanda + larguraBanda / 2} y={ALTURA_UTIL + 16} textAnchor="middle" fontSize={13} fill={COR_TEXTO_MUTED}>
                       {ponto.rotulo}
                     </text>
                   )}
@@ -130,7 +130,7 @@ export function FluxoCaixaChart({ pontos }: { pontos: PontoFluxoCaixa[] }) {
 
         {hover && (
           <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg border border-hairline bg-surface px-3 py-2 text-xs shadow-md"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg border border-hairline bg-surface px-3.5 py-2.5 text-sm shadow-md"
             style={{ left: hoverX, top: MARGEM.top }}
           >
             <p className="mb-1 font-medium text-ink">{hover.rotulo}</p>

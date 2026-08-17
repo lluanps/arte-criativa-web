@@ -24,17 +24,17 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       .finally(() => setCarregando(false));
   }, [id]);
 
-  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-ink-secondary">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-5xl px-6 py-10 text-base text-ink-secondary">Carregando...</main>;
   if (!venda)
     return (
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="mx-auto max-w-5xl px-6 py-10">
         <ErrorBanner mensagem={erro ?? "Venda não encontrada"} />
       </main>
     );
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/vendas" className="text-sm text-ink-secondary hover:underline">
+    <main className="mx-auto max-w-5xl px-6 py-10">
+      <Link href="/vendas" className="text-base text-ink-secondary hover:underline">
         ← Vendas
       </Link>
       <PageHeader
@@ -43,31 +43,31 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       />
 
       <Card className="overflow-x-auto p-0">
-        <table className="w-full text-sm">
-          <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
+        <table className="w-full text-base">
+          <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
             <tr>
-              <th className="px-4 py-3">Produto</th>
-              <th className="px-4 py-3">Quantidade</th>
-              <th className="px-4 py-3">Preço unitário</th>
-              <th className="px-4 py-3">Subtotal</th>
+              <th className="px-5 py-4">Produto</th>
+              <th className="px-5 py-4">Quantidade</th>
+              <th className="px-5 py-4">Preço unitário</th>
+              <th className="px-5 py-4">Subtotal</th>
             </tr>
           </thead>
           <tbody>
             {venda.itens.map((item) => (
               <tr key={item.id} className="border-b border-hairline last:border-0">
-                <td className="px-4 py-3 font-medium text-ink">{item.produtoNome}</td>
-                <td className="px-4 py-3 text-ink-secondary">{item.quantidade}</td>
-                <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(item.precoUnitario)}</td>
-                <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(item.subtotal)}</td>
+                <td className="px-5 py-4 font-medium text-ink">{item.produtoNome}</td>
+                <td className="px-5 py-4 text-ink-secondary">{item.quantidade}</td>
+                <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(item.precoUnitario)}</td>
+                <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(item.subtotal)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="border-t border-hairline bg-surface-hover">
-              <td colSpan={3} className="px-4 py-3 text-right font-semibold text-ink-secondary">
+              <td colSpan={3} className="px-5 py-4 text-right font-semibold text-ink-secondary">
                 Total
               </td>
-              <td className="px-4 py-3 font-semibold text-ink">{formatarMoeda(venda.valorTotal)}</td>
+              <td className="px-5 py-4 text-lg font-semibold text-ink">{formatarMoeda(venda.valorTotal)}</td>
             </tr>
           </tfoot>
         </table>

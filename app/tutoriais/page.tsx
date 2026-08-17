@@ -110,7 +110,7 @@ export default function TutoriaisPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Tutoriais"
         descricao="Conteúdo passo a passo de produção, opcionalmente ligado a um produto."
@@ -121,12 +121,12 @@ export default function TutoriaisPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <form onSubmit={criar} className="grid gap-5">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div>
                 <Label htmlFor="titulo">Título *</Label>
                 <Input id="titulo" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-                {errosCampos.titulo && <p className="mt-1 text-xs text-critical">{errosCampos.titulo}</p>}
+                {errosCampos.titulo && <p className="mt-1 text-sm text-critical">{errosCampos.titulo}</p>}
               </div>
               <div>
                 <Label htmlFor="categoria">Categoria</Label>
@@ -208,7 +208,7 @@ export default function TutoriaisPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-ink-secondary">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : tutoriais.length === 0 ? (
         <EmptyState mensagem="Nenhum tutorial cadastrado ainda." />
       ) : (
@@ -220,10 +220,10 @@ export default function TutoriaisPage() {
               className="block rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover hover:bg-surface-hover"
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-ink">{t.titulo}</h3>
-                <span className="text-xs text-ink-faint">{t.passos.length} passo(s)</span>
+                <h3 className="text-lg font-semibold text-ink">{t.titulo}</h3>
+                <span className="text-sm text-ink-faint">{t.passos.length} passo(s)</span>
               </div>
-              <p className="mt-1 text-sm text-ink-secondary">
+              <p className="mt-1 text-base text-ink-secondary">
                 {t.categoria ?? "Sem categoria"}
                 {t.produtoRelacionadoNome && ` · ${t.produtoRelacionadoNome}`}
               </p>

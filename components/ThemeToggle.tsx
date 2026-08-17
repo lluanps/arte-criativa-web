@@ -22,7 +22,7 @@ export function ThemeToggle() {
   useEffect(() => setMontado(true), []);
 
   if (!montado) {
-    return <div className="h-8 w-full shrink-0" aria-hidden />;
+    return <div className="h-10 w-full shrink-0" aria-hidden />;
   }
 
   const atual = OPCOES.find((o) => o.valor === theme) ?? OPCOES[2];
@@ -36,11 +36,11 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={proximo}
-      className="flex w-full items-center gap-2 rounded-lg bg-sidebar-raised px-3 py-2 text-xs font-medium text-sidebar-ink-muted transition-colors hover:text-sidebar-ink"
+      className="flex w-full items-center gap-2.5 rounded-lg bg-sidebar-raised px-3.5 py-2.5 text-sm font-medium text-sidebar-ink-muted transition-colors hover:text-sidebar-ink"
       title={`Tema: ${atual.rotulo} (clique pra trocar)`}
       aria-label={`Tema atual: ${atual.rotulo}. Clique pra trocar.`}
     >
-      <atual.Icone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+      <atual.Icone className="h-4 w-4" strokeWidth={2} aria-hidden />
       {atual.rotulo}
     </button>
   );

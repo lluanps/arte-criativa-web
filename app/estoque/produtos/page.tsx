@@ -76,7 +76,7 @@ export default function ProdutosPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Produtos"
         descricao="Produtos finais vendidos (velas, xícaras etc.)"
@@ -91,11 +91,11 @@ export default function ProdutosPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-critical">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="categoria">Categoria</Label>
@@ -112,7 +112,7 @@ export default function ProdutosPage() {
                 value={form.precoVenda}
                 onChange={(e) => setForm({ ...form, precoVenda: Number(e.target.value) })}
               />
-              {errosCampos.precoVenda && <p className="mt-1 text-xs text-critical">{errosCampos.precoVenda}</p>}
+              {errosCampos.precoVenda && <p className="mt-1 text-sm text-critical">{errosCampos.precoVenda}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -130,7 +130,7 @@ export default function ProdutosPage() {
               <button
                 type="button"
                 onClick={() => gerarDescricaoComChatGPT(form)}
-                className="mb-1.5 block text-xs font-medium text-ink-secondary hover:underline"
+                className="mb-1.5 block text-sm font-medium text-ink-secondary hover:underline"
               >
                 ✨ Gerar com ChatGPT
               </button>
@@ -138,7 +138,7 @@ export default function ProdutosPage() {
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="fotoUrl">URL da foto</Label>
-              <div className="mb-1.5 flex gap-3 text-xs font-medium text-ink-secondary">
+              <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
                 <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
                   🖼️ Gerar imagem com ChatGPT
                 </button>
@@ -163,19 +163,19 @@ export default function ProdutosPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-ink-secondary">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : produtos.length === 0 ? (
         <EmptyState mensagem="Nenhum produto cadastrado ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Categoria</th>
-                <th className="px-4 py-3">Preço</th>
-                <th className="px-4 py-3">Estoque</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-5 py-4">Nome</th>
+                <th className="px-5 py-4">Categoria</th>
+                <th className="px-5 py-4">Preço</th>
+                <th className="px-5 py-4">Estoque</th>
+                <th className="px-5 py-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -183,19 +183,19 @@ export default function ProdutosPage() {
                 const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
                 return (
                   <tr key={produto.id} className="border-b border-hairline last:border-0">
-                    <td className="px-4 py-3 font-medium text-ink">
+                    <td className="px-5 py-4 font-medium text-ink">
                       <Link href={`/estoque/produtos/${produto.id}`} className="hover:underline">
                         {produto.nome}
                       </Link>
-                      {!produto.ativo && <span className="ml-2 text-xs text-ink-faint">(inativo)</span>}
+                      {!produto.ativo && <span className="ml-2 text-sm text-ink-faint">(inativo)</span>}
                     </td>
-                    <td className="px-4 py-3 text-ink-secondary">{produto.categoria ?? "—"}</td>
-                    <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(produto.precoVenda)}</td>
-                    <td className={`px-4 py-3 ${estoqueBaixo ? "font-medium text-critical" : "text-ink-secondary"}`}>
+                    <td className="px-5 py-4 text-ink-secondary">{produto.categoria ?? "—"}</td>
+                    <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(produto.precoVenda)}</td>
+                    <td className={`px-5 py-4 ${estoqueBaixo ? "font-medium text-critical" : "text-ink-secondary"}`}>
                       {produto.estoqueAtual}
                       {estoqueBaixo && " ⚠"}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-5 py-4 text-right">
                       <Link href={`/estoque/produtos/${produto.id}`} className="mr-3 text-ink-secondary hover:underline">
                         Ver
                       </Link>

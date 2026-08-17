@@ -82,8 +82,8 @@ export default function LancamentosPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/financeiro" className="text-sm text-ink-secondary hover:underline">
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      <Link href="/financeiro" className="text-base text-ink-secondary hover:underline">
         ← Financeiro
       </Link>
       <PageHeader
@@ -96,7 +96,7 @@ export default function LancamentosPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="tipo">Tipo</Label>
               <Select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoLancamento)}>
@@ -107,7 +107,7 @@ export default function LancamentosPage() {
             <div>
               <Label htmlFor="categoria">Categoria *</Label>
               <Input id="categoria" required value={categoria} onChange={(e) => setCategoria(e.target.value)} />
-              {errosCampos.categoria && <p className="mt-1 text-xs text-critical">{errosCampos.categoria}</p>}
+              {errosCampos.categoria && <p className="mt-1 text-sm text-critical">{errosCampos.categoria}</p>}
             </div>
             <div>
               <Label htmlFor="valor">Valor *</Label>
@@ -120,7 +120,7 @@ export default function LancamentosPage() {
                 value={valor}
                 onChange={(e) => setValor(Number(e.target.value))}
               />
-              {errosCampos.valor && <p className="mt-1 text-xs text-critical">{errosCampos.valor}</p>}
+              {errosCampos.valor && <p className="mt-1 text-sm text-critical">{errosCampos.valor}</p>}
             </div>
             <div>
               <Label htmlFor="dataLancamento">Data *</Label>
@@ -146,33 +146,33 @@ export default function LancamentosPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-ink-secondary">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : lancamentos.length === 0 ? (
         <EmptyState mensagem="Nenhum lançamento registrado ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-hairline bg-surface-hover text-left text-xs uppercase text-ink-secondary">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Data</th>
-                <th className="px-4 py-3">Tipo</th>
-                <th className="px-4 py-3">Categoria</th>
-                <th className="px-4 py-3">Descrição</th>
-                <th className="px-4 py-3">Valor</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-5 py-4">Data</th>
+                <th className="px-5 py-4">Tipo</th>
+                <th className="px-5 py-4">Categoria</th>
+                <th className="px-5 py-4">Descrição</th>
+                <th className="px-5 py-4">Valor</th>
+                <th className="px-5 py-4"></th>
               </tr>
             </thead>
             <tbody>
               {lancamentos.map((l) => (
                 <tr key={l.id} className="border-b border-hairline last:border-0">
-                  <td className="px-4 py-3 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-4 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
+                  <td className="px-5 py-4">
                     <Badge tone={l.tipo === "RECEITA" ? "success" : "danger"}>{l.tipo === "RECEITA" ? "Receita" : "Despesa"}</Badge>
                   </td>
-                  <td className="px-4 py-3 font-medium text-ink">{l.categoria}</td>
-                  <td className="px-4 py-3 text-ink-secondary">{l.descricao ?? "—"}</td>
-                  <td className="px-4 py-3 text-ink-secondary">{formatarMoeda(l.valor)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-5 py-4 font-medium text-ink">{l.categoria}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{l.descricao ?? "—"}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(l.valor)}</td>
+                  <td className="px-5 py-4 text-right">
                     {l.origem === "MANUAL" ? (
                       <button onClick={() => excluir(l)} className="text-critical hover:underline">
                         Excluir

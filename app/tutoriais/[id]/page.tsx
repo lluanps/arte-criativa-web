@@ -117,11 +117,11 @@ export default function TutorialDetalhePage({ params }: { params: Promise<{ id: 
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-ink-secondary">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-5xl px-6 py-10 text-base text-ink-secondary">Carregando...</main>;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/tutoriais" className="text-sm text-ink-secondary hover:underline">
+    <main className="mx-auto max-w-5xl px-6 py-10">
+      <Link href="/tutoriais" className="text-base text-ink-secondary hover:underline">
         ← Tutoriais
       </Link>
       <PageHeader titulo={titulo || "Tutorial"} />
@@ -129,12 +129,12 @@ export default function TutorialDetalhePage({ params }: { params: Promise<{ id: 
       {erro && <ErrorBanner mensagem={erro} />}
 
       <Card>
-        <form onSubmit={salvar} className="grid gap-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+        <form onSubmit={salvar} className="grid gap-5">
+          <div className="grid gap-5 sm:grid-cols-3">
             <div>
               <Label htmlFor="titulo">Título *</Label>
               <Input id="titulo" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-              {errosCampos.titulo && <p className="mt-1 text-xs text-critical">{errosCampos.titulo}</p>}
+              {errosCampos.titulo && <p className="mt-1 text-sm text-critical">{errosCampos.titulo}</p>}
             </div>
             <div>
               <Label htmlFor="categoria">Categoria</Label>

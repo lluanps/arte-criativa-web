@@ -48,11 +48,11 @@ export function DespesasPorCategoriaChart({ fatias }: { fatias: FatiaCategoria[]
 
             return (
               <g key={fatia.categoria}>
-                <text x={-12} y={yLinha + ALTURA_LINHA / 2} textAnchor="end" dominantBaseline="middle" fontSize={12} fill={COR_TEXTO_SECUNDARIO}>
+                <text x={-12} y={yLinha + ALTURA_LINHA / 2} textAnchor="end" dominantBaseline="middle" fontSize={13} fill={COR_TEXTO_SECUNDARIO}>
                   {fatia.categoria.length > 20 ? `${fatia.categoria.slice(0, 19)}…` : fatia.categoria}
                 </text>
                 <path d={pathBarra(0, yBarra, larguraBarra, ALTURA_BARRA)} fill={COR_BARRA} opacity={emFoco ? 1 : 0.45} />
-                <text x={larguraBarra + 8} y={yLinha + ALTURA_LINHA / 2} dominantBaseline="middle" fontSize={12} fill={COR_TEXTO_MUTED}>
+                <text x={larguraBarra + 8} y={yLinha + ALTURA_LINHA / 2} dominantBaseline="middle" fontSize={13} fill={COR_TEXTO_MUTED}>
                   {formatarMoeda(fatia.valor)}
                 </text>
                 <rect
