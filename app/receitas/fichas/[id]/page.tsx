@@ -4,19 +4,28 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { formatarMoeda } from "@/lib/format";
 import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
-import { Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 
 interface LinhaItem {
   materiaPrimaId: number | "";
   quantidade: number;
 }
 
+function tomDaMargem(percentual: number | null): "default" | "success" | "warning" | "danger" {
+  if (percentual === null) return "default";
+  if (percentual < 15) return "danger";
+  if (percentual < 40) return "warning";
+  return "success";
+}
+
 export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
 
+  const [receita, setReceita] = useState<ReceitaResponse | null>(null);
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
   const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrimaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -34,17 +43,18 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
     setCarregando(true);
     setErro(null);
     try {
-      const [receita, p, mp] = await Promise.all([
+      const [receitaCarregada, p, mp] = await Promise.all([
         api.get<ReceitaResponse>(`/receitas/${id}`),
         api.get<ProdutoResponse[]>("/produtos"),
         api.get<MateriaPrimaResponse[]>("/materias-primas"),
       ]);
+      setReceita(receitaCarregada);
       setProdutos(p);
       setMateriasPrimas(mp);
-      setProdutoId(receita.produtoId);
-      setNome(receita.nome);
-      setRendimento(receita.rendimento);
-      setItens(receita.itens.map((i) => ({ materiaPrimaId: i.materiaPrimaId, quantidade: i.quantidade })));
+      setProdutoId(receitaCarregada.produtoId);
+      setNome(receitaCarregada.nome);
+      setRendimento(receitaCarregada.rendimento);
+      setItens(receitaCarregada.itens.map((i) => ({ materiaPrimaId: i.materiaPrimaId, quantidade: i.quantidade })));
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar ficha técnica");
     } finally {
@@ -116,6 +126,35 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
       <PageHeader titulo={nome || "Ficha técnica"} />
 
       {erro && <ErrorBanner mensagem={erro} />}
+
+      {receita && (
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Card>
+            <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Custo de produção</p>
+            <p className="mt-1.5 text-2xl font-extrabold tabular-figures text-ink">{formatarMoeda(receita.custoProducao)}</p>
+          </Card>
+          <Card>
+            <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Preço de venda</p>
+            <p className="mt-1.5 text-2xl font-extrabold tabular-figures text-ink">
+              {formatarMoeda(produtos.find((p) => p.id === receita.produtoId)?.precoVenda ?? 0)}
+            </p>
+          </Card>
+          <Card>
+            <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Margem de lucro</p>
+            <p className={`mt-1.5 text-2xl font-extrabold tabular-figures ${receita.margemLucro < 0 ? "text-critical" : "text-good"}`}>
+              {formatarMoeda(receita.margemLucro)}
+            </p>
+          </Card>
+          <Card>
+            <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Margem</p>
+            <p className="mt-1.5">
+              <Badge tone={tomDaMargem(receita.margemPercentual)}>
+                {receita.margemPercentual !== null ? `${receita.margemPercentual}%` : "—"}
+              </Badge>
+            </p>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <form onSubmit={salvar} className="grid gap-5">

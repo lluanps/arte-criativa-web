@@ -128,6 +128,9 @@ export default function VendasPage() {
             <Link href="/vendas/canais" className="text-base font-semibold text-ink-secondary hover:underline">
               Canais
             </Link>
+            <Link href="/vendas/relatorio" className="text-base font-semibold text-ink-secondary hover:underline">
+              Relatório
+            </Link>
             <Button onClick={() => setMostrarForm((v) => !v)}>{mostrarForm ? "Cancelar" : "Nova venda"}</Button>
           </div>
         }

@@ -262,6 +262,7 @@ export default function ProdutosPage() {
                   <tr>
                     <th className="px-5 py-4 font-bold">Produto</th>
                     <th className="px-5 py-4 font-bold">Categoria</th>
+                    <th className="px-5 py-4 font-bold">Volume</th>
                     <th className="px-5 py-4 font-bold">Preço</th>
                     <th className="px-5 py-4 font-bold">Estoque</th>
                     <th className="px-5 py-4"></th>
@@ -293,6 +294,7 @@ export default function ProdutosPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-ink-secondary">{produto.categoriaNome ?? "—"}</td>
+                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{produto.volumeMl ? `${produto.volumeMl}ml` : "—"}</td>
                         <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(produto.precoVenda)}</td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-1.5">
