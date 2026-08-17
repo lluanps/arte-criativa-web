@@ -5,8 +5,8 @@ export interface VendaItemRequest {
 }
 
 export interface VendaRequest {
-  clienteNome?: string | null;
-  canal?: string | null;
+  clienteId?: number | null;
+  canalId?: number | null;
   itens: VendaItemRequest[];
 }
 
@@ -21,8 +21,10 @@ export interface VendaItemResponse {
 
 export interface VendaResponse {
   id: number;
+  clienteId: number | null;
   clienteNome: string | null;
-  canal: string | null;
+  canalId: number | null;
+  canalNome: string | null;
   valorTotal: number;
   itens: VendaItemResponse[];
   dataVenda: string;

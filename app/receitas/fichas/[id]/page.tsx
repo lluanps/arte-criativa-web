@@ -142,7 +142,7 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="rendimento"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={rendimento}
                 onChange={(e) => setRendimento(Number(e.target.value))}
@@ -154,18 +154,20 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
             <Label>Matérias-primas *</Label>
             <div className="grid gap-2">
               {itens.map((linha, index) => (
-                <div key={index} className="grid grid-cols-[1fr_140px_auto] items-end gap-2">
-                  <Select
-                    value={linha.materiaPrimaId}
-                    onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
-                  >
-                    <option value="">Selecione...</option>
-                    {materiasPrimas.map((mp) => (
-                      <option key={mp.id} value={mp.id}>
-                        {mp.nome} ({mp.unidadeMedida})
-                      </option>
-                    ))}
-                  </Select>
+                <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_140px_auto] sm:items-end">
+                  <div className="col-span-2 sm:col-span-1">
+                    <Select
+                      value={linha.materiaPrimaId}
+                      onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
+                    >
+                      <option value="">Selecione...</option>
+                      {materiasPrimas.map((mp) => (
+                        <option key={mp.id} value={mp.id}>
+                          {mp.nome} ({mp.unidadeMedida})
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                   <Input
                     type="number"
                     step="0.001"
@@ -176,6 +178,7 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                   <Button
                     type="button"
                     variant="secondary"
+                    className="col-span-2 sm:col-span-1"
                     onClick={() => setItens((atual) => atual.filter((_, i) => i !== index))}
                     disabled={itens.length === 1}
                   >

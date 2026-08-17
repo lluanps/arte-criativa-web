@@ -51,6 +51,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
         unidadeMedida: mp.unidadeMedida,
         custoUnitario: mp.custoUnitario,
         estoqueMinimo: mp.estoqueMinimo,
+        volumeMl: mp.volumeMl,
         fornecedor: mp.fornecedor ?? "",
       });
       setMovimentacoes(movs);
@@ -163,6 +164,17 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 min="0"
                 value={form.estoqueMinimo}
                 onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="volumeMl">Volume (ml)</Label>
+              <Input
+                id="volumeMl"
+                type="number"
+                step="1"
+                min="0"
+                value={form.volumeMl ?? ""}
+                onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
               />
             </div>
             <div>

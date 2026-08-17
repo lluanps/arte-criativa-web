@@ -4,6 +4,7 @@ import Link from "next/link";
 const secoes = [
   { nome: "Produtos", href: "/estoque/produtos", descricao: "Produtos finais, preço de venda e estoque atual" },
   { nome: "Matérias-primas", href: "/estoque/materias-primas", descricao: "Insumos usados na produção, custo e estoque" },
+  { nome: "Categorias", href: "/estoque/categorias", descricao: "Categorias usadas para organizar os produtos" },
 ];
 
 export default function EstoquePage() {

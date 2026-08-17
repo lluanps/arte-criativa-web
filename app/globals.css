@@ -29,6 +29,7 @@
   --warning-soft: #f0e1c8;
   --critical: #c14f5e;
   --critical-soft: #f2dbdf;
+  --bg-texture: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'160'%3E%3Cg%20stroke%3D'%23a091a8'%20stroke-width%3D'1.4'%20stroke-linecap%3D'round'%20fill%3D'none'%20opacity%3D'0.4'%3E%3Cpath%20d%3D'M12%2018%20L28%2010'%2F%3E%3Cpath%20d%3D'M40%2034%20L54%2042'%2F%3E%3Cpath%20d%3D'M70%2012%20L82%2022'%2F%3E%3Cpath%20d%3D'M100%2030%20L118%2020'%2F%3E%3Cpath%20d%3D'M20%2060%20L34%2068'%2F%3E%3Cpath%20d%3D'M60%2070%20L76%2062'%2F%3E%3Cpath%20d%3D'M96%2066%20L108%2078'%2F%3E%3Cpath%20d%3D'M130%2060%20L146%2052'%2F%3E%3Cpath%20d%3D'M10%20100%20L24%20110'%2F%3E%3Cpath%20d%3D'M50%20108%20L64%2098'%2F%3E%3Cpath%20d%3D'M84%20104%20L98%20114'%2F%3E%3Cpath%20d%3D'M118%2096%20L134%20106'%2F%3E%3Cpath%20d%3D'M30%20138%20L44%20130'%2F%3E%3Cpath%20d%3D'M70%20132%20L86%20140'%2F%3E%3Cpath%20d%3D'M104%20136%20L120%20128'%2F%3E%3Cpath%20d%3D'M140%20130%20L152%20140'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,6 +54,7 @@
     --warning-soft: #3c2f1c;
     --critical: #bd6857;
     --critical-soft: #3c2620;
+    --bg-texture: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'160'%3E%3Cg%20stroke%3D'%23766c5d'%20stroke-width%3D'1.4'%20stroke-linecap%3D'round'%20fill%3D'none'%20opacity%3D'0.4'%3E%3Cpath%20d%3D'M12%2018%20L28%2010'%2F%3E%3Cpath%20d%3D'M40%2034%20L54%2042'%2F%3E%3Cpath%20d%3D'M70%2012%20L82%2022'%2F%3E%3Cpath%20d%3D'M100%2030%20L118%2020'%2F%3E%3Cpath%20d%3D'M20%2060%20L34%2068'%2F%3E%3Cpath%20d%3D'M60%2070%20L76%2062'%2F%3E%3Cpath%20d%3D'M96%2066%20L108%2078'%2F%3E%3Cpath%20d%3D'M130%2060%20L146%2052'%2F%3E%3Cpath%20d%3D'M10%20100%20L24%20110'%2F%3E%3Cpath%20d%3D'M50%20108%20L64%2098'%2F%3E%3Cpath%20d%3D'M84%20104%20L98%20114'%2F%3E%3Cpath%20d%3D'M118%2096%20L134%20106'%2F%3E%3Cpath%20d%3D'M30%20138%20L44%20130'%2F%3E%3Cpath%20d%3D'M70%20132%20L86%20140'%2F%3E%3Cpath%20d%3D'M104%20136%20L120%20128'%2F%3E%3Cpath%20d%3D'M140%20130%20L152%20140'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
   }
 }
 
@@ -77,11 +79,24 @@
   --warning-soft: #3c2f1c;
   --critical: #bd6857;
   --critical-soft: #3c2620;
+  --bg-texture: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'160'%3E%3Cg%20stroke%3D'%23766c5d'%20stroke-width%3D'1.4'%20stroke-linecap%3D'round'%20fill%3D'none'%20opacity%3D'0.4'%3E%3Cpath%20d%3D'M12%2018%20L28%2010'%2F%3E%3Cpath%20d%3D'M40%2034%20L54%2042'%2F%3E%3Cpath%20d%3D'M70%2012%20L82%2022'%2F%3E%3Cpath%20d%3D'M100%2030%20L118%2020'%2F%3E%3Cpath%20d%3D'M20%2060%20L34%2068'%2F%3E%3Cpath%20d%3D'M60%2070%20L76%2062'%2F%3E%3Cpath%20d%3D'M96%2066%20L108%2078'%2F%3E%3Cpath%20d%3D'M130%2060%20L146%2052'%2F%3E%3Cpath%20d%3D'M10%20100%20L24%20110'%2F%3E%3Cpath%20d%3D'M50%20108%20L64%2098'%2F%3E%3Cpath%20d%3D'M84%20104%20L98%20114'%2F%3E%3Cpath%20d%3D'M118%2096%20L134%20106'%2F%3E%3Cpath%20d%3D'M30%20138%20L44%20130'%2F%3E%3Cpath%20d%3D'M70%20132%20L86%20140'%2F%3E%3Cpath%20d%3D'M104%20136%20L120%20128'%2F%3E%3Cpath%20d%3D'M140%20130%20L152%20140'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
 }
 
 h1, h2, h3 {
   font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
   letter-spacing: -0.01em;
+}
+
+/*
+ * Textura de fundo sutil (fiapos/linho, tipo papel artesanal) atrás do conteúdo —
+ * só aparece nos vãos entre os cards, que ficam opacos (bg-surface) por cima. Cada
+ * tema define sua própria versão de --bg-texture lá em cima (light/dark), então a
+ * cor do traço já vem certa pro tema ativo.
+ */
+body {
+  background-image: var(--bg-texture);
+  background-repeat: repeat;
+  background-attachment: fixed;
 }
 
 .tabular-figures {

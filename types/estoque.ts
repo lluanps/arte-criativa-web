@@ -7,7 +7,9 @@ export interface ProdutoResponse {
   id: number;
   nome: string;
   descricao: string | null;
-  categoria: string | null;
+  categoriaId: number | null;
+  categoriaNome: string | null;
+  volumeMl: number | null;
   precoVenda: number;
   estoqueAtual: number;
   estoqueMinimo: number;
@@ -20,7 +22,8 @@ export interface ProdutoResponse {
 export interface ProdutoRequest {
   nome: string;
   descricao?: string | null;
-  categoria?: string | null;
+  categoriaId?: number | null;
+  volumeMl?: number | null;
   precoVenda: number;
   estoqueMinimo: number;
   fotoUrl?: string | null;
@@ -34,6 +37,7 @@ export interface MateriaPrimaResponse {
   custoUnitario: number;
   estoqueAtual: number;
   estoqueMinimo: number;
+  volumeMl: number | null;
   fornecedor: string | null;
   criadoEm: string;
   atualizadoEm: string;
@@ -44,6 +48,7 @@ export interface MateriaPrimaRequest {
   unidadeMedida: string;
   custoUnitario: number;
   estoqueMinimo: number;
+  volumeMl?: number | null;
   fornecedor?: string | null;
 }
 
