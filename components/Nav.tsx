@@ -18,7 +18,7 @@ export function Nav() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-8 bg-sidebar px-4 py-6">
+    <aside className="flex min-h-screen w-72 shrink-0 flex-col gap-8 bg-sidebar px-4 pb-16 pt-6">
       <div className="flex items-center gap-3 px-2">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent shadow-sm">
           <IconCandle className="h-6 w-6 text-accent-ink" />

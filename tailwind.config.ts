@@ -1,7 +1,8 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
+  // Sem "dark:" em lugar nenhum do código — o tema é resolvido inteiramente pelas CSS
+  // custom properties em globals.css (ver ThemeProvider.tsx, attribute="data-theme").
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
