@@ -108,7 +108,7 @@ export default function VendasPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Vendas"
         descricao="Pedidos que dão baixa no estoque e geram lançamento financeiro."
@@ -121,8 +121,8 @@ export default function VendasPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={registrar} className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={registrar} className="grid gap-5">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="clienteNome">Cliente</Label>
                 <Input id="clienteNome" value={clienteNome} onChange={(e) => setClienteNome(e.target.value)} />
@@ -139,7 +139,7 @@ export default function VendasPage() {
                 {itens.map((linha, index) => (
                   <div key={index} className="grid grid-cols-[1fr_100px_120px_auto] items-end gap-2">
                     <div>
-                      {index === 0 && <span className="mb-1 block text-xs text-neutral-500">Produto</span>}
+                      {index === 0 && <span className="mb-1 block text-sm text-ink-secondary">Produto</span>}
                       <Select
                         value={linha.produtoId}
                         onChange={(e) => selecionarProduto(index, Number(e.target.value))}
@@ -153,7 +153,7 @@ export default function VendasPage() {
                       </Select>
                     </div>
                     <div>
-                      {index === 0 && <span className="mb-1 block text-xs text-neutral-500">Qtd.</span>}
+                      {index === 0 && <span className="mb-1 block text-sm text-ink-secondary">Qtd.</span>}
                       <Input
                         type="number"
                         step="0.001"
@@ -163,7 +163,7 @@ export default function VendasPage() {
                       />
                     </div>
                     <div>
-                      {index === 0 && <span className="mb-1 block text-xs text-neutral-500">Preço unit.</span>}
+                      {index === 0 && <span className="mb-1 block text-sm text-ink-secondary">Preço unit.</span>}
                       <Input
                         type="number"
                         step="0.01"
@@ -183,8 +183,8 @@ export default function VendasPage() {
               </Button>
             </div>
 
-            <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
-              <span className="text-sm text-neutral-600">
+            <div className="flex items-center justify-between border-t border-hairline pt-4">
+              <span className="text-base text-ink-secondary">
                 Total estimado: <strong>{formatarMoeda(totalEstimado)}</strong>
               </span>
               <Button type="submit" disabled={salvando}>
@@ -196,32 +196,32 @@ export default function VendasPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : vendas.length === 0 ? (
         <EmptyState mensagem="Nenhuma venda registrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Data</th>
-                <th className="px-4 py-3">Cliente</th>
-                <th className="px-4 py-3">Canal</th>
-                <th className="px-4 py-3">Itens</th>
-                <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-5 py-4">Data</th>
+                <th className="px-5 py-4">Cliente</th>
+                <th className="px-5 py-4">Canal</th>
+                <th className="px-5 py-4">Itens</th>
+                <th className="px-5 py-4">Total</th>
+                <th className="px-5 py-4"></th>
               </tr>
             </thead>
             <tbody>
               {vendas.map((venda) => (
-                <tr key={venda.id} className="border-b border-neutral-100 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600">{formatarDataHora(venda.dataVenda)}</td>
-                  <td className="px-4 py-3 font-medium text-neutral-900">{venda.clienteNome ?? "—"}</td>
-                  <td className="px-4 py-3 text-neutral-600">{venda.canal ?? "—"}</td>
-                  <td className="px-4 py-3 text-neutral-600">{venda.itens.length}</td>
-                  <td className="px-4 py-3 font-medium text-neutral-900">{formatarMoeda(venda.valorTotal)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/vendas/${venda.id}`} className="text-neutral-600 hover:underline">
+                <tr key={venda.id} className="border-b border-hairline last:border-0">
+                  <td className="px-5 py-4 text-ink-secondary">{formatarDataHora(venda.dataVenda)}</td>
+                  <td className="px-5 py-4 font-medium text-ink">{venda.clienteNome ?? "—"}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{venda.canal ?? "—"}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{venda.itens.length}</td>
+                  <td className="px-5 py-4 font-medium text-ink">{formatarMoeda(venda.valorTotal)}</td>
+                  <td className="px-5 py-4 text-right">
+                    <Link href={`/vendas/${venda.id}`} className="text-ink-secondary hover:underline">
                       Ver
                     </Link>
                   </td>

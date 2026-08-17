@@ -99,8 +99,8 @@ export default function FichasTecnicasPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/receitas" className="text-sm text-neutral-500 hover:underline">
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      <Link href="/receitas" className="text-base text-ink-secondary hover:underline">
         ← Receitas / Produção
       </Link>
       <PageHeader
@@ -113,8 +113,8 @@ export default function FichasTecnicasPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <form onSubmit={criar} className="grid gap-5">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div>
                 <Label htmlFor="produtoId">Produto *</Label>
                 <Select
@@ -130,12 +130,12 @@ export default function FichasTecnicasPage() {
                     </option>
                   ))}
                 </Select>
-                {errosCampos.produtoId && <p className="mt-1 text-xs text-red-600">{errosCampos.produtoId}</p>}
+                {errosCampos.produtoId && <p className="mt-1 text-sm text-critical">{errosCampos.produtoId}</p>}
               </div>
               <div>
                 <Label htmlFor="nome">Nome da ficha *</Label>
                 <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
-                {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+                {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
               </div>
               <div>
                 <Label htmlFor="rendimento">Rendimento (un.)</Label>
@@ -156,7 +156,7 @@ export default function FichasTecnicasPage() {
                 {itens.map((linha, index) => (
                   <div key={index} className="grid grid-cols-[1fr_140px_auto] items-end gap-2">
                     <div>
-                      {index === 0 && <span className="mb-1 block text-xs text-neutral-500">Matéria-prima</span>}
+                      {index === 0 && <span className="mb-1 block text-sm text-ink-secondary">Matéria-prima</span>}
                       <Select
                         value={linha.materiaPrimaId}
                         onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
@@ -170,7 +170,7 @@ export default function FichasTecnicasPage() {
                       </Select>
                     </div>
                     <div>
-                      {index === 0 && <span className="mb-1 block text-xs text-neutral-500">Quantidade</span>}
+                      {index === 0 && <span className="mb-1 block text-sm text-ink-secondary">Quantidade</span>}
                       <Input
                         type="number"
                         step="0.001"
@@ -205,34 +205,34 @@ export default function FichasTecnicasPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : receitas.length === 0 ? (
         <EmptyState mensagem="Nenhuma ficha técnica cadastrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Produto</th>
-                <th className="px-4 py-3">Rendimento</th>
-                <th className="px-4 py-3">Itens</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-5 py-4">Nome</th>
+                <th className="px-5 py-4">Produto</th>
+                <th className="px-5 py-4">Rendimento</th>
+                <th className="px-5 py-4">Itens</th>
+                <th className="px-5 py-4"></th>
               </tr>
             </thead>
             <tbody>
               {receitas.map((r) => (
-                <tr key={r.id} className="border-b border-neutral-100 last:border-0">
-                  <td className="px-4 py-3 font-medium text-neutral-900">
+                <tr key={r.id} className="border-b border-hairline last:border-0">
+                  <td className="px-5 py-4 font-medium text-ink">
                     <Link href={`/receitas/fichas/${r.id}`} className="hover:underline">
                       {r.nome}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-neutral-600">{r.produtoNome}</td>
-                  <td className="px-4 py-3 text-neutral-600">{r.rendimento}</td>
-                  <td className="px-4 py-3 text-neutral-600">{r.itens.length}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/receitas/fichas/${r.id}`} className="text-neutral-600 hover:underline">
+                  <td className="px-5 py-4 text-ink-secondary">{r.produtoNome}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{r.rendimento}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{r.itens.length}</td>
+                  <td className="px-5 py-4 text-right">
+                    <Link href={`/receitas/fichas/${r.id}`} className="text-ink-secondary hover:underline">
                       Ver
                     </Link>
                   </td>

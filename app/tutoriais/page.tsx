@@ -110,7 +110,7 @@ export default function TutoriaisPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Tutoriais"
         descricao="Conteúdo passo a passo de produção, opcionalmente ligado a um produto."
@@ -121,12 +121,12 @@ export default function TutoriaisPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <form onSubmit={criar} className="grid gap-5">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div>
                 <Label htmlFor="titulo">Título *</Label>
                 <Input id="titulo" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-                {errosCampos.titulo && <p className="mt-1 text-xs text-red-600">{errosCampos.titulo}</p>}
+                {errosCampos.titulo && <p className="mt-1 text-sm text-critical">{errosCampos.titulo}</p>}
               </div>
               <div>
                 <Label htmlFor="categoria">Categoria</Label>
@@ -208,7 +208,7 @@ export default function TutoriaisPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : tutoriais.length === 0 ? (
         <EmptyState mensagem="Nenhum tutorial cadastrado ainda." />
       ) : (
@@ -217,13 +217,13 @@ export default function TutoriaisPage() {
             <Link
               key={t.id}
               href={`/tutoriais/${t.id}`}
-              className="block rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+              className="block rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover hover:bg-surface-hover"
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-neutral-900">{t.titulo}</h3>
-                <span className="text-xs text-neutral-400">{t.passos.length} passo(s)</span>
+                <h3 className="text-lg font-semibold text-ink">{t.titulo}</h3>
+                <span className="text-sm text-ink-faint">{t.passos.length} passo(s)</span>
               </div>
-              <p className="mt-1 text-sm text-neutral-500">
+              <p className="mt-1 text-base text-ink-secondary">
                 {t.categoria ?? "Sem categoria"}
                 {t.produtoRelacionadoNome && ` · ${t.produtoRelacionadoNome}`}
               </p>

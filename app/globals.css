@@ -1,3 +1,89 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Design system do ateliê: duas atmosferas, não um claro-invertido-vira-escuro.
+ * Claro = "estúdio de dia" (lilás + rosa sobre quase-branco). Escuro = "oficina à
+ * noite" (verde-floresta + madeira sobre quase-preto). Tudo em CSS custom property —
+ * componentes usam as classes do Tailwind (bg-surface, text-ink, etc.), nunca hex cru.
+ */
+:root {
+  color-scheme: light;
+  --sidebar: #7c5a96;
+  --sidebar-raised: #6a4b84;
+  --sidebar-ink: #f3ecf7;
+  --sidebar-ink-muted: #d6c2e3;
+  --paper: #faf7fb;
+  --surface: #ffffff;
+  --surface-hover: #f6eff9;
+  --ink: #2b2230;
+  --ink-secondary: #7c6b82;
+  --ink-faint: #a091a8;
+  --hairline: #e6dcec;
+  --accent: #d1608f;
+  --accent-ink: #ffffff;
+  --good: #5f8f6e;
+  --good-soft: #dcece0;
+  --warning: #bd7a2e;
+  --warning-soft: #f0e1c8;
+  --critical: #c14f5e;
+  --critical-soft: #f2dbdf;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --sidebar: #15120d;
+    --sidebar-raised: #211b13;
+    --sidebar-ink: #e7e0d2;
+    --sidebar-ink-muted: #9c9384;
+    --paper: #1c1712;
+    --surface: #26201a;
+    --surface-hover: #302921;
+    --ink: #ece5d8;
+    --ink-secondary: #a89c8a;
+    --ink-faint: #766c5d;
+    --hairline: #3a3226;
+    --accent: #5f8452;
+    --accent-ink: #0f1a0d;
+    --good: #7fa070;
+    --good-soft: #2c3626;
+    --warning: #c99349;
+    --warning-soft: #3c2f1c;
+    --critical: #bd6857;
+    --critical-soft: #3c2620;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --sidebar: #15120d;
+  --sidebar-raised: #211b13;
+  --sidebar-ink: #e7e0d2;
+  --sidebar-ink-muted: #9c9384;
+  --paper: #1c1712;
+  --surface: #26201a;
+  --surface-hover: #302921;
+  --ink: #ece5d8;
+  --ink-secondary: #a89c8a;
+  --ink-faint: #766c5d;
+  --hairline: #3a3226;
+  --accent: #5f8452;
+  --accent-ink: #0f1a0d;
+  --good: #7fa070;
+  --good-soft: #2c3626;
+  --warning: #c99349;
+  --warning-soft: #3c2f1c;
+  --critical: #bd6857;
+  --critical-soft: #3c2620;
+}
+
+h1, h2, h3 {
+  font-family: ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.tabular-figures {
+  font-variant-numeric: tabular-nums;
+}

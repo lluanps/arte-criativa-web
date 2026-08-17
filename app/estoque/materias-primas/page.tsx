@@ -74,7 +74,7 @@ export default function MateriasPrimasPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Matérias-primas"
         descricao="Insumos usados na produção dos produtos."
@@ -89,11 +89,11 @@ export default function MateriasPrimasPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
@@ -104,7 +104,7 @@ export default function MateriasPrimasPage() {
                 value={form.unidadeMedida}
                 onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
               />
-              {errosCampos.unidadeMedida && <p className="mt-1 text-xs text-red-600">{errosCampos.unidadeMedida}</p>}
+              {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
             </div>
             <div>
               <Label htmlFor="custoUnitario">Custo unitário *</Label>
@@ -117,7 +117,7 @@ export default function MateriasPrimasPage() {
                 value={form.custoUnitario}
                 onChange={(e) => setForm({ ...form, custoUnitario: Number(e.target.value) })}
               />
-              {errosCampos.custoUnitario && <p className="mt-1 text-xs text-red-600">{errosCampos.custoUnitario}</p>}
+              {errosCampos.custoUnitario && <p className="mt-1 text-sm text-critical">{errosCampos.custoUnitario}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -144,42 +144,42 @@ export default function MateriasPrimasPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : materiasPrimas.length === 0 ? (
         <EmptyState mensagem="Nenhuma matéria-prima cadastrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Unidade</th>
-                <th className="px-4 py-3">Custo unitário</th>
-                <th className="px-4 py-3">Estoque</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-5 py-4">Nome</th>
+                <th className="px-5 py-4">Unidade</th>
+                <th className="px-5 py-4">Custo unitário</th>
+                <th className="px-5 py-4">Estoque</th>
+                <th className="px-5 py-4"></th>
               </tr>
             </thead>
             <tbody>
               {materiasPrimas.map((mp) => {
                 const estoqueBaixo = mp.estoqueAtual <= mp.estoqueMinimo;
                 return (
-                  <tr key={mp.id} className="border-b border-neutral-100 last:border-0">
-                    <td className="px-4 py-3 font-medium text-neutral-900">
+                  <tr key={mp.id} className="border-b border-hairline last:border-0">
+                    <td className="px-5 py-4 font-medium text-ink">
                       <Link href={`/estoque/materias-primas/${mp.id}`} className="hover:underline">
                         {mp.nome}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-neutral-600">{mp.unidadeMedida}</td>
-                    <td className="px-4 py-3 text-neutral-600">{formatarMoeda(mp.custoUnitario)}</td>
-                    <td className={`px-4 py-3 ${estoqueBaixo ? "font-medium text-red-600" : "text-neutral-600"}`}>
+                    <td className="px-5 py-4 text-ink-secondary">{mp.unidadeMedida}</td>
+                    <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(mp.custoUnitario)}</td>
+                    <td className={`px-5 py-4 ${estoqueBaixo ? "font-medium text-critical" : "text-ink-secondary"}`}>
                       {mp.estoqueAtual}
                       {estoqueBaixo && " ⚠"}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/estoque/materias-primas/${mp.id}`} className="mr-3 text-neutral-600 hover:underline">
+                    <td className="px-5 py-4 text-right">
+                      <Link href={`/estoque/materias-primas/${mp.id}`} className="mr-3 text-ink-secondary hover:underline">
                         Ver
                       </Link>
-                      <button onClick={() => excluir(mp)} className="text-red-600 hover:underline">
+                      <button onClick={() => excluir(mp)} className="text-critical hover:underline">
                         Excluir
                       </button>
                     </td>

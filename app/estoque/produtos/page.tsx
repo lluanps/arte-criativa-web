@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { criarArteNoCanva, gerarDescricaoComChatGPT, gerarImagemComChatGPT } from "@/lib/ai-shortcuts";
 import { formatarMoeda } from "@/lib/format";
 import { ProdutoRequest, ProdutoResponse } from "@/types/estoque";
-import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { VendaResponse } from "@/types/vendas";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup } from "@/components/Icon";
 
 const PRODUTO_VAZIO: ProdutoRequest = {
   nome: "",
@@ -13,10 +16,19 @@ const PRODUTO_VAZIO: ProdutoRequest = {
   categoria: "",
   precoVenda: 0,
   estoqueMinimo: 0,
+  fotoUrl: "",
 };
+
+function iconeDoProduto(categoria: string | null) {
+  const c = (categoria ?? "").toLowerCase();
+  if (c.includes("vela")) return IconCandle;
+  if (c.includes("xícara") || c.includes("xicara") || c.includes("cerâmica") || c.includes("ceramica")) return IconCup;
+  return IconBox;
+}
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
+  const [vendas, setVendas] = useState<VendaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -28,8 +40,12 @@ export default function ProdutosPage() {
     setCarregando(true);
     setErro(null);
     try {
-      const dados = await api.get<ProdutoResponse[]>("/produtos");
-      setProdutos(dados);
+      const [dadosProdutos, dadosVendas] = await Promise.all([
+        api.get<ProdutoResponse[]>("/produtos"),
+        api.get<VendaResponse[]>("/vendas"),
+      ]);
+      setProdutos(dadosProdutos);
+      setVendas(dadosVendas);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar produtos");
     } finally {
@@ -73,14 +89,23 @@ export default function ProdutosPage() {
     }
   }
 
+  const hoje = new Date();
+  const vendasDoMes = vendas.filter((v) => {
+    const data = new Date(v.dataVenda);
+    return data.getMonth() === hoje.getMonth() && data.getFullYear() === hoje.getFullYear();
+  });
+  const vendidoNoMes = vendasDoMes.reduce((soma, v) => soma + v.valorTotal, 0);
+  const ticketMedio = vendasDoMes.length > 0 ? vendidoNoMes / vendasDoMes.length : 0;
+  const estoqueBaixoCount = produtos.filter((p) => p.estoqueAtual <= p.estoqueMinimo).length;
+
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Produtos"
-        descricao="Produtos finais vendidos (velas, xícaras etc.)"
+        descricao="Produtos finais vendidos — velas, xícaras e mais."
         acao={
           <Button onClick={() => setMostrarForm((v) => !v)}>
-            {mostrarForm ? "Cancelar" : "Novo produto"}
+            {mostrarForm ? "Cancelar" : "+ Novo produto"}
           </Button>
         }
       />
@@ -89,11 +114,11 @@ export default function ProdutosPage() {
 
       {mostrarForm && (
         <Card className="mb-6">
-          <form onSubmit={criar} className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="categoria">Categoria</Label>
@@ -110,7 +135,7 @@ export default function ProdutosPage() {
                 value={form.precoVenda}
                 onChange={(e) => setForm({ ...form, precoVenda: Number(e.target.value) })}
               />
-              {errosCampos.precoVenda && <p className="mt-1 text-xs text-red-600">{errosCampos.precoVenda}</p>}
+              {errosCampos.precoVenda && <p className="mt-1 text-sm text-critical">{errosCampos.precoVenda}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -125,7 +150,31 @@ export default function ProdutosPage() {
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="descricao">Descrição</Label>
+              <button
+                type="button"
+                onClick={() => gerarDescricaoComChatGPT(form)}
+                className="mb-1.5 block text-sm font-medium text-ink-secondary hover:underline"
+              >
+                ✨ Gerar com ChatGPT
+              </button>
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="fotoUrl">URL da foto</Label>
+              <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
+                <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
+                  🖼️ Gerar imagem com ChatGPT
+                </button>
+                <button type="button" onClick={criarArteNoCanva} className="hover:underline">
+                  🎨 Criar arte no Canva
+                </button>
+              </div>
+              <Input
+                id="fotoUrl"
+                placeholder="https://..."
+                value={form.fotoUrl ?? ""}
+                onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })}
+              />
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={salvando}>
@@ -137,52 +186,114 @@ export default function ProdutosPage() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-neutral-500">Carregando...</p>
-      ) : produtos.length === 0 ? (
-        <EmptyState mensagem="Nenhum produto cadastrado ainda." />
+        <p className="text-base text-ink-secondary">Carregando...</p>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
-              <tr>
-                <th className="px-4 py-3">Nome</th>
-                <th className="px-4 py-3">Categoria</th>
-                <th className="px-4 py-3">Preço</th>
-                <th className="px-4 py-3">Estoque</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {produtos.map((produto) => {
-                const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
-                return (
-                  <tr key={produto.id} className="border-b border-neutral-100 last:border-0">
-                    <td className="px-4 py-3 font-medium text-neutral-900">
-                      <Link href={`/estoque/produtos/${produto.id}`} className="hover:underline">
-                        {produto.nome}
-                      </Link>
-                      {!produto.ativo && <span className="ml-2 text-xs text-neutral-400">(inativo)</span>}
-                    </td>
-                    <td className="px-4 py-3 text-neutral-600">{produto.categoria ?? "—"}</td>
-                    <td className="px-4 py-3 text-neutral-600">{formatarMoeda(produto.precoVenda)}</td>
-                    <td className={`px-4 py-3 ${estoqueBaixo ? "font-medium text-red-600" : "text-neutral-600"}`}>
-                      {produto.estoqueAtual}
-                      {estoqueBaixo && " ⚠"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/estoque/produtos/${produto.id}`} className="mr-3 text-neutral-600 hover:underline">
-                        Ver
-                      </Link>
-                      <button onClick={() => excluir(produto)} className="text-red-600 hover:underline">
-                        Excluir
-                      </button>
-                    </td>
+        <>
+          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <Card>
+              <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Produtos ativos</p>
+              <p className="mt-1.5 text-3xl font-extrabold tabular-figures text-ink">{produtos.filter((p) => p.ativo).length}</p>
+            </Card>
+            <Card>
+              <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Estoque baixo</p>
+              <p className={`mt-1.5 text-3xl font-extrabold tabular-figures ${estoqueBaixoCount > 0 ? "text-warning" : "text-ink"}`}>
+                {estoqueBaixoCount}
+              </p>
+            </Card>
+            <Card>
+              <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Vendido no mês</p>
+              <p className="mt-1.5 text-3xl font-extrabold tabular-figures text-good">{formatarMoeda(vendidoNoMes)}</p>
+            </Card>
+            <Card>
+              <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Ticket médio</p>
+              <p className="mt-1.5 text-3xl font-extrabold tabular-figures text-ink">{formatarMoeda(ticketMedio)}</p>
+            </Card>
+          </div>
+
+          {produtos.length === 0 ? (
+            <EmptyState mensagem="Nenhum produto cadastrado ainda." />
+          ) : (
+            <Card className="overflow-x-auto p-0">
+              <table className="w-full text-base">
+                <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-faint">
+                  <tr>
+                    <th className="px-5 py-4 font-bold">Produto</th>
+                    <th className="px-5 py-4 font-bold">Categoria</th>
+                    <th className="px-5 py-4 font-bold">Preço</th>
+                    <th className="px-5 py-4 font-bold">Estoque</th>
+                    <th className="px-5 py-4"></th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
+                </thead>
+                <tbody>
+                  {produtos.map((produto) => {
+                    const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
+                    const referencia = Math.max(produto.estoqueMinimo * 3, 1);
+                    const pctBarra = Math.max(6, Math.min(100, (produto.estoqueAtual / referencia) * 100));
+                    const Icone = iconeDoProduto(produto.categoria);
+                    return (
+                      <tr key={produto.id} className="border-b border-hairline last:border-0">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3.5">
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                                estoqueBaixo ? "bg-warning-soft text-warning" : "bg-good-soft text-good"
+                              }`}
+                            >
+                              <Icone className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <Link href={`/estoque/produtos/${produto.id}`} className="font-semibold text-ink hover:underline">
+                                {produto.nome}
+                              </Link>
+                              {!produto.ativo && <span className="ml-2 text-sm text-ink-faint">(inativo)</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-ink-secondary">{produto.categoria ?? "—"}</td>
+                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(produto.precoVenda)}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="h-1.5 w-32 overflow-hidden rounded-full bg-hairline">
+                                <span
+                                  className={`block h-full rounded-full ${estoqueBaixo ? "bg-warning" : "bg-good"}`}
+                                  style={{ width: `${pctBarra}%` }}
+                                />
+                              </div>
+                              {estoqueBaixo && (
+                                <Badge tone="warning">
+                                  <span className="flex items-center gap-1">
+                                    <IconAlertTriangle className="h-3 w-3" strokeWidth={2.4} />
+                                    baixo
+                                  </span>
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-sm text-ink-secondary tabular-figures">{produto.estoqueAtual} un.</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <Link
+                            href={`/estoque/produtos/${produto.id}`}
+                            className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-accent"
+                          >
+                            Ver <IconArrowRight className="h-4 w-4" strokeWidth={2.4} />
+                          </Link>
+                          <button
+                            onClick={() => excluir(produto)}
+                            className="ml-3 text-sm text-critical hover:underline"
+                          >
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </>
       )}
     </main>
   );

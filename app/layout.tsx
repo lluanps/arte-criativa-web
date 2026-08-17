@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nav } from "@/components/Nav";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,10 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className="min-h-screen bg-neutral-50 text-neutral-900">
-        <Nav />
-        {children}
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className="flex min-h-screen bg-paper text-ink">
+        <ThemeProvider>
+          <Nav />
+          <div className="min-w-0 flex-1">{children}</div>
+        </ThemeProvider>
       </body>
     </html>
   );

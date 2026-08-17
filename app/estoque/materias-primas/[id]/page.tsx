@@ -102,17 +102,17 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-4xl px-6 py-10 text-sm text-neutral-500">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-6xl px-6 py-10 text-base text-ink-secondary">Carregando...</main>;
   if (!materiaPrima || !form)
     return (
-      <main className="mx-auto max-w-4xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-10">
         <ErrorBanner mensagem={erro ?? "Matéria-prima não encontrada"} />
       </main>
     );
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <Link href="/estoque/materias-primas" className="text-sm text-neutral-500 hover:underline">
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      <Link href="/estoque/materias-primas" className="text-base text-ink-secondary hover:underline">
         ← Matérias-primas
       </Link>
       <PageHeader
@@ -122,14 +122,14 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
 
       {erro && <ErrorBanner mensagem={erro} />}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-4 font-semibold">Editar matéria-prima</h2>
-          <form onSubmit={salvar} className="grid gap-4">
+          <h2 className="mb-4 text-lg font-semibold">Editar matéria-prima</h2>
+          <form onSubmit={salvar} className="grid gap-5">
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
@@ -139,7 +139,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 value={form.unidadeMedida}
                 onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
               />
-              {errosCampos.unidadeMedida && <p className="mt-1 text-xs text-red-600">{errosCampos.unidadeMedida}</p>}
+              {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
             </div>
             <div>
               <Label htmlFor="custoUnitario">Custo unitário *</Label>
@@ -152,7 +152,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 value={form.custoUnitario}
                 onChange={(e) => setForm({ ...form, custoUnitario: Number(e.target.value) })}
               />
-              {errosCampos.custoUnitario && <p className="mt-1 text-xs text-red-600">{errosCampos.custoUnitario}</p>}
+              {errosCampos.custoUnitario && <p className="mt-1 text-sm text-critical">{errosCampos.custoUnitario}</p>}
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -178,10 +178,10 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
         </Card>
 
         <Card>
-          <h2 className="mb-4 font-semibold">Registrar movimentação</h2>
+          <h2 className="mb-4 text-lg font-semibold">Registrar movimentação</h2>
           {erroMov && <ErrorBanner mensagem={erroMov} />}
-          <form onSubmit={registrarMovimentacao} className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={registrarMovimentacao} className="grid gap-5">
+            <div className="grid grid-cols-2 gap-5">
               <div>
                 <Label htmlFor="tipo">Tipo</Label>
                 <Select
@@ -237,31 +237,31 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
         </Card>
       </div>
 
-      <h2 className="mb-4 mt-8 font-semibold">Histórico de movimentações</h2>
+      <h2 className="mb-4 mt-8 text-lg font-semibold">Histórico de movimentações</h2>
       {movimentacoes.length === 0 ? (
         <EmptyState mensagem="Nenhuma movimentação registrada ainda." />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-4 py-3">Data</th>
-                <th className="px-4 py-3">Tipo</th>
-                <th className="px-4 py-3">Motivo</th>
-                <th className="px-4 py-3">Quantidade</th>
-                <th className="px-4 py-3">Observação</th>
+                <th className="px-5 py-4">Data</th>
+                <th className="px-5 py-4">Tipo</th>
+                <th className="px-5 py-4">Motivo</th>
+                <th className="px-5 py-4">Quantidade</th>
+                <th className="px-5 py-4">Observação</th>
               </tr>
             </thead>
             <tbody>
               {movimentacoes.map((mov) => (
-                <tr key={mov.id} className="border-b border-neutral-100 last:border-0">
-                  <td className="px-4 py-3 text-neutral-600">{formatarDataHora(mov.dataMovimentacao)}</td>
-                  <td className={`px-4 py-3 font-medium ${mov.tipo === "ENTRADA" ? "text-green-700" : "text-red-700"}`}>
+                <tr key={mov.id} className="border-b border-hairline last:border-0">
+                  <td className="px-5 py-4 text-ink-secondary">{formatarDataHora(mov.dataMovimentacao)}</td>
+                  <td className={`px-5 py-4 font-medium ${mov.tipo === "ENTRADA" ? "text-good" : "text-critical"}`}>
                     {mov.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                   </td>
-                  <td className="px-4 py-3 text-neutral-600">{mov.motivo}</td>
-                  <td className="px-4 py-3 text-neutral-600">{mov.quantidade}</td>
-                  <td className="px-4 py-3 text-neutral-600">{mov.observacao ?? "—"}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{mov.motivo}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{mov.quantidade}</td>
+                  <td className="px-5 py-4 text-ink-secondary">{mov.observacao ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -5,10 +5,11 @@ import { formatarMoeda } from "@/lib/format";
 import { FatiaCategoria } from "@/lib/charts";
 
 // Ranking por magnitude → cor sequencial de hue único (o comprimento da barra já
-// carrega o valor; a cor não precisa variar por linha).
-const COR_BARRA = "#2a78d6";
-const COR_TEXTO_MUTED = "#898781";
-const COR_TEXTO_SECUNDARIO = "#52514e";
+// carrega o valor; a cor não precisa variar por linha). Muda de tom no escuro via
+// CSS custom property (ver globals.css), cascata pura, sem re-render em JS.
+const COR_BARRA = "var(--accent)";
+const COR_TEXTO_MUTED = "var(--ink-faint)";
+const COR_TEXTO_SECUNDARIO = "var(--ink-secondary)";
 
 const LARGURA = 720;
 const ALTURA_LINHA = 32;
@@ -28,7 +29,7 @@ export function DespesasPorCategoriaChart({ fatias }: { fatias: FatiaCategoria[]
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   if (fatias.length === 0) {
-    return <p className="py-8 text-center text-sm text-neutral-500">Sem despesas no período.</p>;
+    return <p className="py-8 text-center text-sm text-ink-secondary">Sem despesas no período.</p>;
   }
 
   const valorMaximo = Math.max(1, ...fatias.map((f) => f.valor));
@@ -47,11 +48,11 @@ export function DespesasPorCategoriaChart({ fatias }: { fatias: FatiaCategoria[]
 
             return (
               <g key={fatia.categoria}>
-                <text x={-12} y={yLinha + ALTURA_LINHA / 2} textAnchor="end" dominantBaseline="middle" fontSize={12} fill={COR_TEXTO_SECUNDARIO}>
+                <text x={-12} y={yLinha + ALTURA_LINHA / 2} textAnchor="end" dominantBaseline="middle" fontSize={13} fill={COR_TEXTO_SECUNDARIO}>
                   {fatia.categoria.length > 20 ? `${fatia.categoria.slice(0, 19)}…` : fatia.categoria}
                 </text>
                 <path d={pathBarra(0, yBarra, larguraBarra, ALTURA_BARRA)} fill={COR_BARRA} opacity={emFoco ? 1 : 0.45} />
-                <text x={larguraBarra + 8} y={yLinha + ALTURA_LINHA / 2} dominantBaseline="middle" fontSize={12} fill={COR_TEXTO_MUTED}>
+                <text x={larguraBarra + 8} y={yLinha + ALTURA_LINHA / 2} dominantBaseline="middle" fontSize={13} fill={COR_TEXTO_MUTED}>
                   {formatarMoeda(fatia.valor)}
                 </text>
                 <rect

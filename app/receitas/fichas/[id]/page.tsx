@@ -106,11 +106,11 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
     }
   }
 
-  if (carregando) return <main className="mx-auto max-w-3xl px-6 py-10 text-sm text-neutral-500">Carregando...</main>;
+  if (carregando) return <main className="mx-auto max-w-5xl px-6 py-10 text-base text-ink-secondary">Carregando...</main>;
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/receitas/fichas" className="text-sm text-neutral-500 hover:underline">
+    <main className="mx-auto max-w-5xl px-6 py-10">
+      <Link href="/receitas/fichas" className="text-base text-ink-secondary hover:underline">
         ← Fichas técnicas
       </Link>
       <PageHeader titulo={nome || "Ficha técnica"} />
@@ -118,8 +118,8 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
       {erro && <ErrorBanner mensagem={erro} />}
 
       <Card>
-        <form onSubmit={salvar} className="grid gap-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+        <form onSubmit={salvar} className="grid gap-5">
+          <div className="grid gap-5 sm:grid-cols-3">
             <div>
               <Label htmlFor="produtoId">Produto *</Label>
               <Select id="produtoId" required value={produtoId} onChange={(e) => setProdutoId(Number(e.target.value))}>
@@ -130,12 +130,12 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                   </option>
                 ))}
               </Select>
-              {errosCampos.produtoId && <p className="mt-1 text-xs text-red-600">{errosCampos.produtoId}</p>}
+              {errosCampos.produtoId && <p className="mt-1 text-sm text-critical">{errosCampos.produtoId}</p>}
             </div>
             <div>
               <Label htmlFor="nome">Nome da ficha *</Label>
               <Input id="nome" required value={nome} onChange={(e) => setNome(e.target.value)} />
-              {errosCampos.nome && <p className="mt-1 text-xs text-red-600">{errosCampos.nome}</p>}
+              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
               <Label htmlFor="rendimento">Rendimento (un.)</Label>
@@ -194,7 +194,7 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
             </Button>
           </div>
 
-          <div className="flex items-center justify-between border-t border-neutral-200 pt-4">
+          <div className="flex items-center justify-between border-t border-hairline pt-4">
             <Button type="button" variant="danger" onClick={excluir} disabled={excluindo}>
               {excluindo ? "Excluindo..." : "Excluir ficha técnica"}
             </Button>
