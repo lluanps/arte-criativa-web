@@ -94,8 +94,10 @@ export function IconCandle(props: IconProps) {
 export function IconCup(props: IconProps) {
   return (
     <Base {...props}>
-      <path d="M6 20c0-4 2.5-6 6-6s6 2 6 6" />
-      <ellipse cx="12" cy="8" rx="5" ry="3" />
+      <path d="M5 9h11v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9Z" />
+      <path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16" />
+      <line x1="9" y1="3.5" x2="9" y2="6" />
+      <line x1="12.5" y1="3.5" x2="12.5" y2="6" />
     </Base>
   );
 }
