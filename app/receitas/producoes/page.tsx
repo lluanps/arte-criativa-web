@@ -102,7 +102,7 @@ export default function ProducoesPage() {
               <Input
                 id="quantidadeProduzida"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 required
                 value={quantidadeProduzida}

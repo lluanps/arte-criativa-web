@@ -2,7 +2,8 @@ import { formatarMoeda } from "@/lib/format";
 
 interface DadosProduto {
   nome: string;
-  categoria?: string | null;
+  categoriaNome?: string | null;
+  volumeMl?: number | null;
   precoVenda: number;
 }
 
@@ -15,7 +16,8 @@ interface DadosProduto {
 
 function linhasContexto(produto: DadosProduto): string {
   const linhas = [`- Nome: ${produto.nome || "(sem nome ainda)"}`];
-  if (produto.categoria) linhas.push(`- Categoria: ${produto.categoria}`);
+  if (produto.categoriaNome) linhas.push(`- Categoria: ${produto.categoriaNome}`);
+  if (produto.volumeMl) linhas.push(`- Volume: ${produto.volumeMl}ml`);
   if (produto.precoVenda > 0) linhas.push(`- Preço: ${formatarMoeda(produto.precoVenda)}`);
   return linhas.join("\n");
 }

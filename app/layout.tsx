@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className="flex min-h-screen bg-paper text-ink">
+      <body className="flex min-h-screen flex-col bg-paper text-ink lg:flex-row">
         <ThemeProvider>
           <Nav />
           <div className="min-w-0 flex-1">{children}</div>

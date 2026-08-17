@@ -13,7 +13,9 @@ import {
   ProdutoResponse,
   TipoMovimentacao,
 } from "@/types/estoque";
+import { CategoriaResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { SelectComCriacao } from "@/components/SelectComCriacao";
 
 const MOTIVOS: MotivoMovimentacaoProduto[] = ["PRODUCAO", "VENDA", "AJUSTE", "PERDA"];
 
@@ -22,6 +24,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
 
   const [produto, setProduto] = useState<ProdutoResponse | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoResponse[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -42,21 +45,24 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
     setCarregando(true);
     setErro(null);
     try {
-      const [p, movs] = await Promise.all([
+      const [p, movs, dadosCategorias] = await Promise.all([
         api.get<ProdutoResponse>(`/produtos/${id}`),
         api.get<MovimentacaoResponse[]>(`/produtos/${id}/movimentacoes`),
+        api.get<CategoriaResponse[]>("/categorias"),
       ]);
       setProduto(p);
       setForm({
         nome: p.nome,
         descricao: p.descricao ?? "",
-        categoria: p.categoria ?? "",
+        categoriaId: p.categoriaId,
+        volumeMl: p.volumeMl,
         precoVenda: p.precoVenda,
         estoqueMinimo: p.estoqueMinimo,
         fotoUrl: p.fotoUrl ?? "",
         ativo: p.ativo,
       });
       setMovimentacoes(movs);
+      setCategorias(dadosCategorias);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar produto");
     } finally {
@@ -130,8 +136,27 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
-              <Label htmlFor="categoria">Categoria</Label>
-              <Input id="categoria" value={form.categoria ?? ""} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
+              <Label htmlFor="categoriaId">Categoria</Label>
+              <SelectComCriacao
+                id="categoriaId"
+                itens={categorias}
+                value={form.categoriaId ?? ""}
+                onChange={(id) => setForm({ ...form, categoriaId: id === "" ? null : id })}
+                onCriar={(nome) => api.post<CategoriaResponse>("/categorias", { nome })}
+                onCriado={(item) => setCategorias((atual) => [...atual, item])}
+                novoPlaceholder="Nome da categoria"
+              />
+            </div>
+            <div>
+              <Label htmlFor="volumeMl">Volume (ml)</Label>
+              <Input
+                id="volumeMl"
+                type="number"
+                step="1"
+                min="0"
+                value={form.volumeMl ?? ""}
+                onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label htmlFor="precoVenda">Preço de venda *</Label>
@@ -151,7 +176,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               <Input
                 id="estoqueMinimo"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={form.estoqueMinimo}
                 onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
@@ -161,7 +186,14 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               <Label htmlFor="descricao">Descrição</Label>
               <button
                 type="button"
-                onClick={() => gerarDescricaoComChatGPT(form)}
+                onClick={() =>
+                  gerarDescricaoComChatGPT({
+                    nome: form.nome,
+                    categoriaNome: categorias.find((c) => c.id === form.categoriaId)?.nome,
+                    volumeMl: form.volumeMl,
+                    precoVenda: form.precoVenda,
+                  })
+                }
                 className="mb-1.5 block text-sm font-medium text-ink-secondary hover:underline"
               >
                 ✨ Gerar com ChatGPT
@@ -171,7 +203,18 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
             <div>
               <Label htmlFor="fotoUrl">URL da foto</Label>
               <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
-                <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
+                <button
+                  type="button"
+                  onClick={() =>
+                    gerarImagemComChatGPT({
+                      nome: form.nome,
+                      categoriaNome: categorias.find((c) => c.id === form.categoriaId)?.nome,
+                      volumeMl: form.volumeMl,
+                      precoVenda: form.precoVenda,
+                    })
+                  }
+                  className="hover:underline"
+                >
                   🖼️ Gerar imagem com ChatGPT
                 </button>
                 <button type="button" onClick={criarArteNoCanva} className="hover:underline">
@@ -237,7 +280,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               <Input
                 id="quantidade"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 required
                 value={movForm.quantidade}

@@ -39,7 +39,7 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       </Link>
       <PageHeader
         titulo={`Venda #${venda.id}`}
-        descricao={`${formatarDataHora(venda.dataVenda)} · ${venda.clienteNome ?? "Cliente não informado"}${venda.canal ? ` · ${venda.canal}` : ""}`}
+        descricao={`${formatarDataHora(venda.dataVenda)} · ${venda.clienteNome ?? "Cliente não informado"}${venda.canalNome ? ` · ${venda.canalNome}` : ""}`}
       />
 
       <Card className="overflow-x-auto p-0">

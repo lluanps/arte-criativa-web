@@ -7,13 +7,16 @@ import { criarArteNoCanva, gerarDescricaoComChatGPT, gerarImagemComChatGPT } fro
 import { formatarMoeda } from "@/lib/format";
 import { ProdutoRequest, ProdutoResponse } from "@/types/estoque";
 import { VendaResponse } from "@/types/vendas";
+import { CategoriaResponse } from "@/types/cadastros";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup } from "@/components/Icon";
 
 const PRODUTO_VAZIO: ProdutoRequest = {
   nome: "",
   descricao: "",
-  categoria: "",
+  categoriaId: null,
+  volumeMl: null,
   precoVenda: 0,
   estoqueMinimo: 0,
   fotoUrl: "",
@@ -29,6 +32,7 @@ function iconeDoProduto(categoria: string | null) {
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
   const [vendas, setVendas] = useState<VendaResponse[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -40,12 +44,14 @@ export default function ProdutosPage() {
     setCarregando(true);
     setErro(null);
     try {
-      const [dadosProdutos, dadosVendas] = await Promise.all([
+      const [dadosProdutos, dadosVendas, dadosCategorias] = await Promise.all([
         api.get<ProdutoResponse[]>("/produtos"),
         api.get<VendaResponse[]>("/vendas"),
+        api.get<CategoriaResponse[]>("/categorias"),
       ]);
       setProdutos(dadosProdutos);
       setVendas(dadosVendas);
+      setCategorias(dadosCategorias);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar produtos");
     } finally {
@@ -121,8 +127,27 @@ export default function ProdutosPage() {
               {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
-              <Label htmlFor="categoria">Categoria</Label>
-              <Input id="categoria" value={form.categoria ?? ""} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
+              <Label htmlFor="categoriaId">Categoria</Label>
+              <SelectComCriacao
+                id="categoriaId"
+                itens={categorias}
+                value={form.categoriaId ?? ""}
+                onChange={(id) => setForm({ ...form, categoriaId: id === "" ? null : id })}
+                onCriar={(nome) => api.post<CategoriaResponse>("/categorias", { nome })}
+                onCriado={(item) => setCategorias((atual) => [...atual, item])}
+                novoPlaceholder="Nome da categoria"
+              />
+            </div>
+            <div>
+              <Label htmlFor="volumeMl">Volume (ml)</Label>
+              <Input
+                id="volumeMl"
+                type="number"
+                step="1"
+                min="0"
+                value={form.volumeMl ?? ""}
+                onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label htmlFor="precoVenda">Preço de venda *</Label>
@@ -142,7 +167,7 @@ export default function ProdutosPage() {
               <Input
                 id="estoqueMinimo"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={form.estoqueMinimo}
                 onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
@@ -152,7 +177,14 @@ export default function ProdutosPage() {
               <Label htmlFor="descricao">Descrição</Label>
               <button
                 type="button"
-                onClick={() => gerarDescricaoComChatGPT(form)}
+                onClick={() =>
+                  gerarDescricaoComChatGPT({
+                    nome: form.nome,
+                    categoriaNome: categorias.find((c) => c.id === form.categoriaId)?.nome,
+                    volumeMl: form.volumeMl,
+                    precoVenda: form.precoVenda,
+                  })
+                }
                 className="mb-1.5 block text-sm font-medium text-ink-secondary hover:underline"
               >
                 ✨ Gerar com ChatGPT
@@ -162,7 +194,18 @@ export default function ProdutosPage() {
             <div className="sm:col-span-2">
               <Label htmlFor="fotoUrl">URL da foto</Label>
               <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
-                <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
+                <button
+                  type="button"
+                  onClick={() =>
+                    gerarImagemComChatGPT({
+                      nome: form.nome,
+                      categoriaNome: categorias.find((c) => c.id === form.categoriaId)?.nome,
+                      volumeMl: form.volumeMl,
+                      precoVenda: form.precoVenda,
+                    })
+                  }
+                  className="hover:underline"
+                >
                   🖼️ Gerar imagem com ChatGPT
                 </button>
                 <button type="button" onClick={criarArteNoCanva} className="hover:underline">
@@ -229,7 +272,7 @@ export default function ProdutosPage() {
                     const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
                     const referencia = Math.max(produto.estoqueMinimo * 3, 1);
                     const pctBarra = Math.max(6, Math.min(100, (produto.estoqueAtual / referencia) * 100));
-                    const Icone = iconeDoProduto(produto.categoria);
+                    const Icone = iconeDoProduto(produto.categoriaNome);
                     return (
                       <tr key={produto.id} className="border-b border-hairline last:border-0">
                         <td className="px-5 py-4">
@@ -249,7 +292,7 @@ export default function ProdutosPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-ink-secondary">{produto.categoria ?? "—"}</td>
+                        <td className="px-5 py-4 text-ink-secondary">{produto.categoriaNome ?? "—"}</td>
                         <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(produto.precoVenda)}</td>
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-1.5">

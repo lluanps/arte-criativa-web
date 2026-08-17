@@ -12,12 +12,12 @@ export function PageHeader({
   acao?: React.ReactNode;
 }) {
   return (
-    <div className="mb-9 flex items-start justify-between gap-4">
+    <div className="mb-9 flex flex-col items-start gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h1 className="text-3xl font-extrabold text-ink">{titulo}</h1>
         {descricao && <p className="mt-1.5 text-base text-ink-secondary">{descricao}</p>}
       </div>
-      {acao}
+      {acao && <div className="flex flex-wrap items-center gap-3">{acao}</div>}
     </div>
   );
 }
