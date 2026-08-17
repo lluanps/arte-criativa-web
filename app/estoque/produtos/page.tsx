@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { criarArteNoCanva, gerarDescricaoComChatGPT, gerarImagemComChatGPT } from "@/lib/ai-shortcuts";
 import { formatarMoeda } from "@/lib/format";
 import { ProdutoRequest, ProdutoResponse } from "@/types/estoque";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
@@ -13,6 +14,7 @@ const PRODUTO_VAZIO: ProdutoRequest = {
   categoria: "",
   precoVenda: 0,
   estoqueMinimo: 0,
+  fotoUrl: "",
 };
 
 export default function ProdutosPage() {
@@ -125,7 +127,31 @@ export default function ProdutosPage() {
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="descricao">Descrição</Label>
+              <button
+                type="button"
+                onClick={() => gerarDescricaoComChatGPT(form)}
+                className="mb-1.5 block text-xs font-medium text-neutral-600 hover:underline dark:text-neutral-400"
+              >
+                ✨ Gerar com ChatGPT
+              </button>
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="fotoUrl">URL da foto</Label>
+              <div className="mb-1.5 flex gap-3 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
+                  🖼️ Gerar imagem com ChatGPT
+                </button>
+                <button type="button" onClick={criarArteNoCanva} className="hover:underline">
+                  🎨 Criar arte no Canva
+                </button>
+              </div>
+              <Input
+                id="fotoUrl"
+                placeholder="https://..."
+                value={form.fotoUrl ?? ""}
+                onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })}
+              />
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={salvando}>

@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { criarArteNoCanva, gerarDescricaoComChatGPT, gerarImagemComChatGPT } from "@/lib/ai-shortcuts";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import {
   MotivoMovimentacaoProduto,
@@ -158,7 +159,31 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
             </div>
             <div>
               <Label htmlFor="descricao">Descrição</Label>
+              <button
+                type="button"
+                onClick={() => gerarDescricaoComChatGPT(form)}
+                className="mb-1.5 block text-xs font-medium text-neutral-600 hover:underline dark:text-neutral-400"
+              >
+                ✨ Gerar com ChatGPT
+              </button>
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+            </div>
+            <div>
+              <Label htmlFor="fotoUrl">URL da foto</Label>
+              <div className="mb-1.5 flex gap-3 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                <button type="button" onClick={() => gerarImagemComChatGPT(form)} className="hover:underline">
+                  🖼️ Gerar imagem com ChatGPT
+                </button>
+                <button type="button" onClick={criarArteNoCanva} className="hover:underline">
+                  🎨 Criar arte no Canva
+                </button>
+              </div>
+              <Input
+                id="fotoUrl"
+                placeholder="https://..."
+                value={form.fotoUrl ?? ""}
+                onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })}
+              />
             </div>
             <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
               <input
