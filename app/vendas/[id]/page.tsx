@@ -2,17 +2,20 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import { VendaResponse } from "@/types/vendas";
-import { Card, ErrorBanner, PageHeader } from "@/components/ui";
+import { Button, Card, ErrorBanner, PageHeader } from "@/components/ui";
 
 export default function VendaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
 
   const [venda, setVenda] = useState<VendaResponse | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   useEffect(() => {
     setCarregando(true);
@@ -23,6 +26,25 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       .catch((e) => setErro(e instanceof ApiError ? e.message : "Erro ao carregar venda"))
       .finally(() => setCarregando(false));
   }, [id]);
+
+  async function excluir() {
+    if (
+      !confirm(
+        "Excluir esta venda? A quantidade de cada item volta pro estoque e o lançamento financeiro " +
+          "de receita gerado por ela é removido. Essa ação não pode ser desfeita."
+      )
+    )
+      return;
+    setExcluindo(true);
+    setErro(null);
+    try {
+      await api.del(`/vendas/${id}`);
+      router.push("/vendas");
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao excluir venda");
+      setExcluindo(false);
+    }
+  }
 
   if (carregando) return <main className="mx-auto max-w-5xl px-6 py-10 text-base text-ink-secondary">Carregando...</main>;
   if (!venda)
@@ -40,7 +62,14 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       <PageHeader
         titulo={`Venda #${venda.id}`}
         descricao={`${formatarDataHora(venda.dataVenda)} · ${venda.clienteNome ?? "Cliente não informado"}${venda.canalNome ? ` · ${venda.canalNome}` : ""}`}
+        acao={
+          <Button variant="danger" onClick={excluir} disabled={excluindo}>
+            {excluindo ? "Excluindo..." : "Excluir venda"}
+          </Button>
+        }
       />
+
+      {erro && <ErrorBanner mensagem={erro} />}
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-base">
