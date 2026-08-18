@@ -1,3 +1,5 @@
+import { limparSessao, obterSessao } from "@/lib/auth";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
 /**
@@ -17,18 +19,31 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const sessao = obterSessao();
+
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...(sessao ? { Authorization: `Bearer ${sessao.token}` } : {}),
         ...options.headers,
       },
       cache: "no-store",
     });
   } catch {
     throw new ApiError(0, "Não foi possível conectar à API. Ela está rodando?");
+  }
+
+  if (res.status === 401) {
+    // Sessão expirada ou token inválido — limpa e manda pro login. Redirect via
+    // window.location (não dá pra usar o router do Next aqui fora de componente).
+    limparSessao();
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+    throw new ApiError(401, "Sessão expirada, faça login novamente.");
   }
 
   if (res.status === 204) {

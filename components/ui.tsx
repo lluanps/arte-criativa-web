@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ButtonHTMLAttributes, InputHTMLAttributes, LabelHTMLAttributes, SelectHTMLAttributes } from "react";
-import { IconAlertTriangle } from "@/components/Icon";
+import { IconAlertTriangle, IconCheckCircle } from "@/components/Icon";
 
 export function PageHeader({
   titulo,
@@ -26,6 +26,15 @@ export function ErrorBanner({ mensagem }: { mensagem: string }) {
   return (
     <div className="mb-5 flex items-start gap-3 rounded-xl bg-critical-soft px-5 py-4 text-base text-critical">
       <IconAlertTriangle className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={2} />
+      {mensagem}
+    </div>
+  );
+}
+
+export function SuccessBanner({ mensagem }: { mensagem: string }) {
+  return (
+    <div className="mb-5 flex items-start gap-3 rounded-xl bg-good-soft px-5 py-4 text-base text-good">
+      <IconCheckCircle className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={2} />
       {mensagem}
     </div>
   );
