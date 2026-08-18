@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { IconBag, IconBook, IconBox, IconCandle, IconClipboard, IconHome, IconMenu, IconWallet, IconX } from "@/components/Icon";
+import { IconBag, IconBook, IconBox, IconCandle, IconClipboard, IconHome, IconLogOut, IconMenu, IconWallet, IconX } from "@/components/Icon";
+import { limparSessao, obterSessao } from "@/lib/auth";
 
 const links = [
   { href: "/", label: "Início", Icon: IconHome },
@@ -23,11 +24,22 @@ const links = [
  */
 export function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [aberto, setAberto] = useState(false);
+  const [nomeUsuario, setNomeUsuario] = useState<string | null>(null);
 
   useEffect(() => {
     setAberto(false);
   }, [pathname]);
+
+  useEffect(() => {
+    setNomeUsuario(obterSessao()?.nome ?? null);
+  }, [pathname]);
+
+  function sair() {
+    limparSessao();
+    router.replace("/login");
+  }
 
   return (
     <>
@@ -102,7 +114,21 @@ export function Nav() {
           })}
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-3">
+          {nomeUsuario && (
+            <div className="flex items-center justify-between gap-2 px-2">
+              <p className="truncate text-sm font-semibold text-sidebar-ink-muted">{nomeUsuario}</p>
+              <button
+                type="button"
+                onClick={sair}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sidebar-ink-muted hover:bg-sidebar-raised hover:text-sidebar-ink"
+                aria-label="Sair"
+                title="Sair"
+              >
+                <IconLogOut className="h-5 w-5" />
+              </button>
+            </div>
+          )}
           <ThemeToggle />
         </div>
       </aside>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nav } from "@/components/Nav";
+import { AppShell } from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
@@ -17,8 +17,7 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col bg-paper text-ink lg:flex-row">
         <ThemeProvider>
-          <Nav />
-          <div className="min-w-0 flex-1">{children}</div>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

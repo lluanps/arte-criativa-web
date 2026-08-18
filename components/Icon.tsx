@@ -212,3 +212,22 @@ export function IconX(props: IconProps) {
     </Base>
   );
 }
+
+export function IconLogOut(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M15 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9" />
+      <polyline points="12,16 17,12 12,8" />
+      <line x1="17" y1="12" x2="8" y2="12" />
+    </Base>
+  );
+}
+
+export function IconLock(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </Base>
+  );
+}
