@@ -91,7 +91,21 @@ export default function ProdutosPage() {
       await api.del(`/produtos/${produto.id}`);
       await carregar();
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : "Erro ao excluir produto");
+      if (e instanceof ApiError && e.status === 409) {
+        // Produto com movimentações/vendas/receita/tutorial vinculados não pode ser
+        // excluído (protege o histórico) — oferece desativar como alternativa, que já
+        // some das telas de venda e do contador de "produtos ativos".
+        if (confirm(`${e.message}\n\nDeseja desativar "${produto.nome}" em vez de excluir? Ele deixa de aparecer pra venda.`)) {
+          try {
+            await api.put(`/produtos/${produto.id}`, { ...produto, ativo: false });
+            await carregar();
+          } catch (e2) {
+            setErro(e2 instanceof ApiError ? e2.message : "Erro ao desativar produto");
+          }
+        }
+      } else {
+        setErro(e instanceof ApiError ? e.message : "Erro ao excluir produto");
+      }
     }
   }
 
