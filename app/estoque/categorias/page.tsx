@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import { CategoriaRequest, CategoriaResponse } from "@/types/cadastros";
+import { formatarData, formatarMoeda } from "@/lib/format";
+import { CategoriaRequest, CategoriaResponse, PrecoMercadoRequest } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, PageHeader } from "@/components/ui";
 
 export default function CategoriasPage() {
@@ -16,6 +17,10 @@ export default function CategoriasPage() {
 
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [nomeEdicao, setNomeEdicao] = useState("");
+
+  const [editandoPrecoId, setEditandoPrecoId] = useState<number | null>(null);
+  const [minEdicao, setMinEdicao] = useState("");
+  const [maxEdicao, setMaxEdicao] = useState("");
 
   async function carregar() {
     setCarregando(true);
@@ -68,6 +73,27 @@ export default function CategoriasPage() {
     }
   }
 
+  function iniciarEdicaoPreco(categoria: CategoriaResponse) {
+    setEditandoPrecoId(categoria.id);
+    setMinEdicao(categoria.precoMercadoMin?.toString() ?? "");
+    setMaxEdicao(categoria.precoMercadoMax?.toString() ?? "");
+  }
+
+  async function salvarPreco(id: number) {
+    const min = Number(minEdicao);
+    const max = Number(maxEdicao);
+    if (!minEdicao || !maxEdicao || Number.isNaN(min) || Number.isNaN(max)) return;
+    setErro(null);
+    try {
+      const request: PrecoMercadoRequest = { min, max };
+      await api.put(`/categorias/${id}/preco-mercado`, request);
+      setEditandoPrecoId(null);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao salvar referência de mercado");
+    }
+  }
+
   async function excluir(categoria: CategoriaResponse) {
     if (!confirm(`Excluir a categoria "${categoria.nome}"?`)) return;
     try {
@@ -107,6 +133,13 @@ export default function CategoriasPage() {
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+              <tr>
+                <th className="px-5 py-4">Nome</th>
+                <th className="px-5 py-4">Referência de mercado</th>
+                <th className="px-5 py-4" />
+              </tr>
+            </thead>
             <tbody>
               {categorias.map((categoria) => (
                 <tr key={categoria.id} className="border-b border-hairline last:border-0">
@@ -122,6 +155,43 @@ export default function CategoriasPage() {
                       categoria.nome
                     )}
                   </td>
+                  <td className="px-5 py-4 text-ink-secondary">
+                    {editandoPrecoId === categoria.id ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          autoFocus
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="min"
+                          className="w-24"
+                          value={minEdicao}
+                          onChange={(e) => setMinEdicao(e.target.value)}
+                        />
+                        <span>–</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="max"
+                          className="w-24"
+                          value={maxEdicao}
+                          onChange={(e) => setMaxEdicao(e.target.value)}
+                        />
+                      </div>
+                    ) : categoria.precoMercadoMin !== null && categoria.precoMercadoMax !== null ? (
+                      <>
+                        {formatarMoeda(categoria.precoMercadoMin)} – {formatarMoeda(categoria.precoMercadoMax)}
+                        {categoria.precoMercadoAtualizadoEm && (
+                          <span className="ml-2 text-sm text-ink-faint">
+                            (atualizado em {formatarData(categoria.precoMercadoAtualizadoEm.slice(0, 10))})
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-ink-faint">Sem referência ainda</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-right whitespace-nowrap">
                     {editandoId === categoria.id ? (
                       <>
@@ -132,8 +202,20 @@ export default function CategoriasPage() {
                           Cancelar
                         </button>
                       </>
+                    ) : editandoPrecoId === categoria.id ? (
+                      <>
+                        <button onClick={() => salvarPreco(categoria.id)} className="mr-3 font-medium text-accent hover:underline">
+                          Salvar
+                        </button>
+                        <button onClick={() => setEditandoPrecoId(null)} className="text-ink-secondary hover:underline">
+                          Cancelar
+                        </button>
+                      </>
                     ) : (
                       <>
+                        <button onClick={() => iniciarEdicaoPreco(categoria)} className="mr-3 text-ink-secondary hover:underline">
+                          Ref. mercado
+                        </button>
                         <button onClick={() => iniciarEdicao(categoria)} className="mr-3 text-ink-secondary hover:underline">
                           Editar
                         </button>

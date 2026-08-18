@@ -1,11 +1,19 @@
 export interface CategoriaResponse {
   id: number;
   nome: string;
+  precoMercadoMin: number | null;
+  precoMercadoMax: number | null;
+  precoMercadoAtualizadoEm: string | null;
   criadoEm: string;
 }
 
 export interface CategoriaRequest {
   nome: string;
+}
+
+export interface PrecoMercadoRequest {
+  min: number;
+  max: number;
 }
 
 export interface CanalVendaResponse {
