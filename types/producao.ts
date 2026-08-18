@@ -28,6 +28,11 @@ export interface ReceitaResponse {
   custoProducao: number;
   margemLucro: number;
   margemPercentual: number | null;
+  margemDesejadaPercentual: number;
+  precoSugerido: number;
+  precoMercadoMin: number | null;
+  precoMercadoMax: number | null;
+  precoMercadoAtualizadoEm: string | null;
   criadoEm: string;
 }
 

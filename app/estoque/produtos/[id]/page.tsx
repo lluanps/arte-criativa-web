@@ -57,6 +57,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
         categoriaId: p.categoriaId,
         volumeMl: p.volumeMl,
         precoVenda: p.precoVenda,
+        margemDesejadaPercentual: p.margemDesejadaPercentual,
         estoqueMinimo: p.estoqueMinimo,
         fotoUrl: p.fotoUrl ?? "",
         ativo: p.ativo,
@@ -170,6 +171,23 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                 onChange={(e) => setForm({ ...form, precoVenda: Number(e.target.value) })}
               />
               {errosCampos.precoVenda && <p className="mt-1 text-sm text-critical">{errosCampos.precoVenda}</p>}
+            </div>
+            <div>
+              <Label htmlFor="margemDesejadaPercentual">Margem desejada (%)</Label>
+              <Input
+                id="margemDesejadaPercentual"
+                type="number"
+                step="1"
+                min="0"
+                placeholder="200 (padrão)"
+                value={form.margemDesejadaPercentual ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, margemDesejadaPercentual: e.target.value === "" ? null : Number(e.target.value) })
+                }
+              />
+              <p className="mt-1 text-sm text-ink-faint">
+                Usada pra calcular o preço sugerido na ficha técnica. Em branco = usa o padrão do sistema (200%).
+              </p>
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>

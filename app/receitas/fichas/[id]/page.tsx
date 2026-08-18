@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import { formatarMoeda } from "@/lib/format";
+import { formatarData, formatarMoeda } from "@/lib/format";
 import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
@@ -154,6 +154,29 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
             </p>
           </Card>
         </div>
+      )}
+
+      {receita && (
+        <Card className="mb-8">
+          <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Preço sugerido</p>
+          <p className="mt-1.5 text-2xl font-extrabold tabular-figures text-ink">{formatarMoeda(receita.precoSugerido)}</p>
+          <p className="mt-1 text-sm text-ink-secondary">
+            Custo de produção × margem desejada de {receita.margemDesejadaPercentual}%
+            {" "}
+            <Link href={`/estoque/produtos/${receita.produtoId}`} className="text-accent hover:underline">
+              (ajustar margem)
+            </Link>
+          </p>
+
+          {receita.precoMercadoMin !== null && receita.precoMercadoMax !== null ? (
+            <p className="mt-3 text-sm text-ink-secondary">
+              Referência de mercado: <strong className="text-ink">{formatarMoeda(receita.precoMercadoMin)} – {formatarMoeda(receita.precoMercadoMax)}</strong>
+              {receita.precoMercadoAtualizadoEm && ` (atualizado em ${formatarData(receita.precoMercadoAtualizadoEm.slice(0, 10))})`}
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-ink-faint">Sem referência de mercado cadastrada pra essa categoria ainda.</p>
+          )}
+        </Card>
       )}
 
       <Card>

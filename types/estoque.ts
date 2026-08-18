@@ -11,6 +11,7 @@ export interface ProdutoResponse {
   categoriaNome: string | null;
   volumeMl: number | null;
   precoVenda: number;
+  margemDesejadaPercentual: number | null;
   estoqueAtual: number;
   estoqueMinimo: number;
   fotoUrl: string | null;
@@ -25,6 +26,7 @@ export interface ProdutoRequest {
   categoriaId?: number | null;
   volumeMl?: number | null;
   precoVenda: number;
+  margemDesejadaPercentual?: number | null;
   estoqueMinimo: number;
   fotoUrl?: string | null;
   ativo?: boolean;
