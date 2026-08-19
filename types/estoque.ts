@@ -14,7 +14,7 @@ export interface ProdutoResponse {
   margemDesejadaPercentual: number | null;
   estoqueAtual: number;
   estoqueMinimo: number;
-  fotoUrl: string | null;
+  fotosUrls: string[];
   ativo: boolean;
   criadoEm: string;
   atualizadoEm: string;
@@ -28,7 +28,7 @@ export interface ProdutoRequest {
   precoVenda: number;
   margemDesejadaPercentual?: number | null;
   estoqueMinimo: number;
-  fotoUrl?: string | null;
+  fotosUrls?: string[];
   ativo?: boolean;
 }
 
