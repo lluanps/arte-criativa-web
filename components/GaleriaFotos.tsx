@@ -39,8 +39,11 @@ export function GaleriaFotos({ urls, onChange }: { urls: string[]; onChange: (ur
         handleUploadUrl: "/api/upload",
       });
       onChange([...urls, blob.url]);
-    } catch {
-      setErro("Não deu pra enviar a imagem. Confira se o armazenamento (Blob) já foi ativado na Vercel.");
+    } catch (e) {
+      // Mostra o motivo de verdade (ex: token do Blob ausente) em vez de um texto
+      // genérico — o erro do @vercel/blob já vem com a mensagem específica.
+      const detalhe = e instanceof Error ? e.message : null;
+      setErro(detalhe ? `Não deu pra enviar a imagem: ${detalhe}` : "Não deu pra enviar a imagem.");
     } finally {
       setEnviando(false);
     }

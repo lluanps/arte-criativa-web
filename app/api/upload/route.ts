@@ -23,6 +23,11 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    // Loga no servidor (aparece nos Runtime Logs da Vercel) além de devolver pro
+    // cliente — sem isso, um erro de configuração (ex: token do Blob ausente) só
+    // aparecia como "400" pelado nos logs, sem nenhuma pista do motivo real.
+    console.error("Erro ao autorizar upload no Blob:", error);
+    const mensagem = error instanceof Error ? error.message : "Erro desconhecido";
+    return NextResponse.json({ error: mensagem }, { status: 400 });
   }
 }

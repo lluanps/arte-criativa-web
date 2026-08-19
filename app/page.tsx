@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IconBag, IconBook, IconBox, IconClipboard, IconWallet } from "@/components/Icon";
+import { IconBag, IconBook, IconBox, IconClipboard, IconSparkles, IconWallet } from "@/components/Icon";
 
 const modulos = [
   { nome: "Estoque", href: "/estoque", descricao: "Produtos, matérias-primas e movimentações", Icon: IconBox },
@@ -7,6 +7,7 @@ const modulos = [
   { nome: "Vendas", href: "/vendas", descricao: "Pedidos e vendas realizadas", Icon: IconBag },
   { nome: "Financeiro", href: "/financeiro", descricao: "Lançamentos, contas a pagar e a receber", Icon: IconWallet },
   { nome: "Tutoriais", href: "/tutoriais", descricao: "Passo a passo de produção", Icon: IconBook },
+  { nome: "Ideias", href: "/ideias", descricao: "Caderno de inspiração e anotações", Icon: IconSparkles },
 ];
 
 export default function Home() {
