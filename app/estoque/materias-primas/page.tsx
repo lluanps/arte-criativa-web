@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
 import { MateriaPrimaRequest, MateriaPrimaResponse } from "@/types/estoque";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const MATERIA_PRIMA_VAZIA: MateriaPrimaRequest = {
   nome: "",
@@ -17,6 +18,7 @@ const MATERIA_PRIMA_VAZIA: MateriaPrimaRequest = {
 };
 
 export default function MateriasPrimasPage() {
+  const perguntar = useConfirm();
   const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrimaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -65,11 +67,30 @@ export default function MateriasPrimasPage() {
   }
 
   async function excluir(materiaPrima: MateriaPrimaResponse) {
-    if (!confirm(`Excluir "${materiaPrima.nome}"? Essa ação não pode ser desfeita.`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir "${materiaPrima.nome}"?`,
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     try {
       await api.del(`/materias-primas/${materiaPrima.id}`);
       await carregar();
     } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        await perguntar({
+          titulo: "Não é possível excluir",
+          descricao: e.message,
+          tone: "warning",
+          acoes: [{ id: "entendi", label: "Entendi", variant: "primary" }],
+        });
+        return;
+      }
       setErro(e instanceof ApiError ? e.message : "Erro ao excluir matéria-prima");
     }
   }

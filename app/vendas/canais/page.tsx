@@ -5,8 +5,10 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { CanalVendaRequest, CanalVendaResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, PageHeader } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function CanaisVendaPage() {
+  const perguntar = useConfirm();
   const [canais, setCanais] = useState<CanalVendaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -69,11 +71,29 @@ export default function CanaisVendaPage() {
   }
 
   async function excluir(canal: CanalVendaResponse) {
-    if (!confirm(`Excluir o canal "${canal.nome}"?`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir o canal "${canal.nome}"?`,
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     try {
       await api.del(`/canais-venda/${canal.id}`);
       await carregar();
     } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        await perguntar({
+          titulo: "Não é possível excluir",
+          descricao: e.message,
+          tone: "warning",
+          acoes: [{ id: "entendi", label: "Entendi", variant: "primary" }],
+        });
+        return;
+      }
       setErro(e instanceof ApiError ? e.message : "Erro ao excluir canal de venda");
     }
   }

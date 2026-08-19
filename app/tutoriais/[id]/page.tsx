@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { ProdutoResponse } from "@/types/estoque";
 import { TutorialPassoRequest, TutorialRequest, TutorialResponse } from "@/types/tutoriais";
 import { Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 interface LinhaPasso {
   ordem: number;
@@ -18,6 +19,7 @@ interface LinhaPasso {
 export default function TutorialDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const perguntar = useConfirm();
 
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -105,7 +107,17 @@ export default function TutorialDetalhePage({ params }: { params: Promise<{ id: 
   }
 
   async function excluir() {
-    if (!confirm("Excluir esse tutorial? Essa ação não pode ser desfeita.")) return;
+    const confirmacao = await perguntar({
+      titulo: "Excluir esse tutorial?",
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     setExcluindo(true);
     setErro(null);
     try {

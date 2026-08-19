@@ -7,10 +7,12 @@ import { api, ApiError } from "@/lib/api";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import { VendaResponse } from "@/types/vendas";
 import { Button, Card, ErrorBanner, PageHeader } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function VendaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const perguntar = useConfirm();
 
   const [venda, setVenda] = useState<VendaResponse | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -28,13 +30,19 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
   }, [id]);
 
   async function excluir() {
-    if (
-      !confirm(
-        "Excluir esta venda? A quantidade de cada item volta pro estoque e o lançamento financeiro " +
-          "de receita gerado por ela é removido. Essa ação não pode ser desfeita."
-      )
-    )
-      return;
+    const confirmacao = await perguntar({
+      titulo: "Excluir esta venda?",
+      descricao:
+        "A quantidade de cada item volta pro estoque e o lançamento financeiro de receita gerado por ela é removido. " +
+        "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     setExcluindo(true);
     setErro(null);
     try {

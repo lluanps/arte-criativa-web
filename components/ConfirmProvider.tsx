@@ -99,7 +99,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             aria-modal="true"
             aria-labelledby="confirm-titulo"
             onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-sm rounded-2xl border border-hairline bg-surface p-6 shadow-2xl transition-all duration-150 ease-out ${
+            className={`w-full max-w-lg rounded-2xl border border-hairline bg-surface p-6 shadow-2xl transition-all duration-150 ease-out ${
               visivel ? "scale-100 opacity-100" : "scale-95 opacity-0"
             }`}
           >

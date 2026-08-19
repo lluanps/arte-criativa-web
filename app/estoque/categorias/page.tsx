@@ -6,8 +6,10 @@ import { api, ApiError } from "@/lib/api";
 import { formatarData, formatarMoeda } from "@/lib/format";
 import { CategoriaRequest, CategoriaResponse, PrecoMercadoRequest } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, PageHeader } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function CategoriasPage() {
+  const perguntar = useConfirm();
   const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -95,11 +97,29 @@ export default function CategoriasPage() {
   }
 
   async function excluir(categoria: CategoriaResponse) {
-    if (!confirm(`Excluir a categoria "${categoria.nome}"?`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir a categoria "${categoria.nome}"?`,
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     try {
       await api.del(`/categorias/${categoria.id}`);
       await carregar();
     } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        await perguntar({
+          titulo: "Não é possível excluir",
+          descricao: e.message,
+          tone: "warning",
+          acoes: [{ id: "entendi", label: "Entendi", variant: "primary" }],
+        });
+        return;
+      }
       setErro(e instanceof ApiError ? e.message : "Erro ao excluir categoria");
     }
   }
