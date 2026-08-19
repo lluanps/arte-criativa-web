@@ -8,10 +8,12 @@ import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import { ClienteRequest, ClienteResponse } from "@/types/cadastros";
 import { VendaResponse } from "@/types/vendas";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function ClienteDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const perguntar = useConfirm();
 
   const [cliente, setCliente] = useState<ClienteResponse | null>(null);
   const [vendas, setVendas] = useState<VendaResponse[]>([]);
@@ -61,15 +63,34 @@ export default function ClienteDetalhePage({ params }: { params: Promise<{ id: s
   }
 
   async function excluir() {
-    if (!confirm("Excluir esse cliente? Essa ação não pode ser desfeita.")) return;
+    const confirmacao = await perguntar({
+      titulo: "Excluir esse cliente?",
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     setExcluindo(true);
     setErro(null);
     try {
       await api.del(`/clientes/${id}`);
       router.push("/vendas/clientes");
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : "Erro ao excluir cliente");
       setExcluindo(false);
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        await perguntar({
+          titulo: "Não é possível excluir",
+          descricao: e.message,
+          tone: "warning",
+          acoes: [{ id: "entendi", label: "Entendi", variant: "primary" }],
+        });
+        return;
+      }
+      setErro(e instanceof ApiError ? e.message : "Erro ao excluir cliente");
     }
   }
 

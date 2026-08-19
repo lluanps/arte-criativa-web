@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { dataLocalISO, formatarData, formatarMoeda } from "@/lib/format";
 import { ContaRequest, ContaResponse, StatusConta, TipoConta } from "@/types/financeiro";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const CORES_STATUS: Record<StatusConta, "default" | "success" | "danger" | "warning"> = {
   PENDENTE: "warning",
@@ -20,6 +21,7 @@ const LABEL_STATUS: Record<StatusConta, string> = {
 };
 
 export default function ContasPage() {
+  const perguntar = useConfirm();
   const [contas, setContas] = useState<ContaResponse[]>([]);
   const [filtroTipo, setFiltroTipo] = useState<TipoConta | "">("");
   const [carregando, setCarregando] = useState(true);
@@ -115,7 +117,16 @@ export default function ContasPage() {
   }
 
   async function excluir(conta: ContaResponse) {
-    if (!confirm(`Excluir a conta "${conta.descricao}"?`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir a conta "${conta.descricao}"?`,
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     setErro(null);
     try {
       await api.del(`/contas/${conta.id}`);

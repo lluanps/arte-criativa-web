@@ -8,6 +8,7 @@ import { formatarData, formatarMoeda } from "@/lib/format";
 import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 interface LinhaItem {
   materiaPrimaId: number | "";
@@ -24,6 +25,7 @@ function tomDaMargem(percentual: number | null): "default" | "success" | "warnin
 export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const perguntar = useConfirm();
 
   const [receita, setReceita] = useState<ReceitaResponse | null>(null);
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
@@ -104,7 +106,17 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
   }
 
   async function excluir() {
-    if (!confirm("Excluir essa ficha técnica? Essa ação não pode ser desfeita.")) return;
+    const confirmacao = await perguntar({
+      titulo: "Excluir essa ficha técnica?",
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     setExcluindo(true);
     setErro(null);
     try {

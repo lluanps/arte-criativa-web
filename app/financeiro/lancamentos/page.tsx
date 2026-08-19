@@ -6,8 +6,10 @@ import { api, ApiError } from "@/lib/api";
 import { dataLocalISO, formatarData, formatarMoeda } from "@/lib/format";
 import { LancamentoFinanceiroRequest, LancamentoFinanceiroResponse, TipoLancamento } from "@/types/financeiro";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function LancamentosPage() {
+  const perguntar = useConfirm();
   const [lancamentos, setLancamentos] = useState<LancamentoFinanceiroResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -88,7 +90,16 @@ export default function LancamentosPage() {
   }
 
   async function excluir(lancamento: LancamentoFinanceiroResponse) {
-    if (!confirm(`Excluir o lançamento "${lancamento.categoria}"?`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir o lançamento "${lancamento.categoria}"?`,
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     setErro(null);
     try {
       await api.del(`/lancamentos-financeiros/${lancamento.id}`);

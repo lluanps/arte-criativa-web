@@ -5,10 +5,12 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { ClienteRequest, ClienteResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const CLIENTE_VAZIO: ClienteRequest = { nome: "", telefone: "", email: "" };
 
 export default function ClientesPage() {
+  const perguntar = useConfirm();
   const [clientes, setClientes] = useState<ClienteResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -50,11 +52,29 @@ export default function ClientesPage() {
   }
 
   async function excluir(cliente: ClienteResponse) {
-    if (!confirm(`Excluir "${cliente.nome}"?`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir "${cliente.nome}"?`,
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     try {
       await api.del(`/clientes/${cliente.id}`);
       await carregar();
     } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        await perguntar({
+          titulo: "Não é possível excluir",
+          descricao: e.message,
+          tone: "warning",
+          acoes: [{ id: "entendi", label: "Entendi", variant: "primary" }],
+        });
+        return;
+      }
       setErro(e instanceof ApiError ? e.message : "Erro ao excluir cliente");
     }
   }
