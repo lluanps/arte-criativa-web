@@ -10,6 +10,7 @@ import { VendaResponse } from "@/types/vendas";
 import { CategoriaResponse } from "@/types/cadastros";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
+import { useConfirm } from "@/components/ConfirmProvider";
 import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup } from "@/components/Icon";
 
 const PRODUTO_VAZIO: ProdutoRequest = {
@@ -30,6 +31,7 @@ function iconeDoProduto(categoria: string | null) {
 }
 
 export default function ProdutosPage() {
+  const perguntar = useConfirm();
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
   const [vendas, setVendas] = useState<VendaResponse[]>([]);
   const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
@@ -85,26 +87,82 @@ export default function ProdutosPage() {
     }
   }
 
+  async function desativar(produto: ProdutoResponse) {
+    try {
+      await api.put(`/produtos/${produto.id}`, { ...produto, ativo: false });
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao desativar produto");
+    }
+  }
+
+  async function oferecerDesativar(produto: ProdutoResponse, motivo: string) {
+    const escolha = await perguntar({
+      titulo: "Desativar em vez de excluir?",
+      descricao: `${motivo}\n\nUm produto desativado some da tela de vendas e do contador de "produtos ativos", sem apagar o histórico.`,
+      tone: "warning",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "desativar", label: "Desativar produto", variant: "primary" },
+      ],
+    });
+    if (escolha === "desativar") await desativar(produto);
+  }
+
   async function excluir(produto: ProdutoResponse) {
-    if (!confirm(`Excluir "${produto.nome}"? Essa ação não pode ser desfeita.`)) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir "${produto.nome}"?`,
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
     try {
       await api.del(`/produtos/${produto.id}`);
       await carregar();
+      return;
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 409) {
+        setErro(e instanceof ApiError ? e.message : "Erro ao excluir produto");
+        return;
+      }
+    }
+
+    // Bloqueado por vínculo (movimentações/vendas/receita/tutorial). Se foi cadastro
+    // por engano, sem venda de verdade, oferece excluir tudo em cascata; senão,
+    // desativar é a única alternativa segura (protege histórico de faturamento).
+    const escolha = await perguntar({
+      titulo: "Não é possível excluir",
+      descricao:
+        "Existem outros registros vinculados a este item (ex: movimentações, vendas, receita ou tutorial).\n\n" +
+        "Foi um cadastro por engano, sem venda de verdade? Nesse caso dá pra excluir tudo de vez.",
+      tone: "warning",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "desativar", label: "Desativar produto", variant: "secondary" },
+        { id: "definitivo", label: "Excluir tudo (foi engano)", variant: "danger" },
+      ],
+    });
+
+    if (escolha === "desativar") {
+      await desativar(produto);
+      return;
+    }
+    if (escolha !== "definitivo") return;
+
+    try {
+      await api.del(`/produtos/${produto.id}/definitivo`);
+      await carregar();
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        // Produto com movimentações/vendas/receita/tutorial vinculados não pode ser
-        // excluído (protege o histórico) — oferece desativar como alternativa, que já
-        // some das telas de venda e do contador de "produtos ativos".
-        if (confirm(`${e.message}\n\nDeseja desativar "${produto.nome}" em vez de excluir? Ele deixa de aparecer pra venda.`)) {
-          try {
-            await api.put(`/produtos/${produto.id}`, { ...produto, ativo: false });
-            await carregar();
-          } catch (e2) {
-            setErro(e2 instanceof ApiError ? e2.message : "Erro ao desativar produto");
-          }
-        }
+        // Tinha venda de verdade — a API recusou o cascade. Cai pra oferecer desativar.
+        await oferecerDesativar(produto, e.message);
       } else {
-        setErro(e instanceof ApiError ? e.message : "Erro ao excluir produto");
+        setErro(e instanceof ApiError ? e.message : "Erro ao excluir definitivamente");
       }
     }
   }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
+import { ConfirmProvider } from "@/components/ConfirmProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col bg-paper text-ink lg:flex-row">
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <ConfirmProvider>
+            <AppShell>{children}</AppShell>
+          </ConfirmProvider>
         </ThemeProvider>
       </body>
     </html>
