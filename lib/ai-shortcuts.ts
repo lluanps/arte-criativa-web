@@ -51,3 +51,43 @@ export function criarArteNoCanva() {
   // produto como texto dentro do design — só abrir já na categoria certa.
   window.open("https://www.canva.com/create/instagram-posts/", "_blank", "noopener,noreferrer");
 }
+
+interface DadosIdeia {
+  titulo: string;
+  corpo?: string | null;
+  tags?: string[];
+}
+
+function linhasContextoIdeia(ideia: DadosIdeia): string {
+  const linhas = [`- Ideia: ${ideia.titulo || "(sem título ainda)"}`];
+  if (ideia.corpo) linhas.push(`- Anotações: ${ideia.corpo}`);
+  if (ideia.tags && ideia.tags.length > 0) linhas.push(`- Tags: ${ideia.tags.join(", ")}`);
+  return linhas.join("\n");
+}
+
+export function sugerirVariacoesComChatGPT(ideia: DadosIdeia) {
+  const prompt = `Tenho esta ideia de produto artesanal e quero explorar variações antes de decidir se vale produzir:
+
+${linhasContextoIdeia(ideia)}
+
+Sugira de 3 a 5 variações viáveis de fazer à mão (cor, material, tamanho ou tema), cada uma com uma frase curta explicando por que pode funcionar.`;
+  abrirChatGPT(prompt);
+}
+
+export function estimarMateriasPrimasComChatGPT(ideia: DadosIdeia) {
+  const prompt = `Tenho esta ideia de produto artesanal ainda não desenvolvida:
+
+${linhasContextoIdeia(ideia)}
+
+Liste as matérias-primas prováveis pra produzir isso (nome + unidade de medida usual, tipo g/ml/un), pra eu montar um rascunho de ficha técnica. Só uma lista simples, sem explicação longa.`;
+  abrirChatGPT(prompt);
+}
+
+export function sugerirNomeComChatGPT(ideia: DadosIdeia) {
+  const prompt = `Preciso de sugestões de nome de venda pra este produto artesanal:
+
+${linhasContextoIdeia(ideia)}
+
+Sugira 8 nomes curtos e memoráveis, com um tom caloroso e artesanal (nada corporativo).`;
+  abrirChatGPT(prompt);
+}

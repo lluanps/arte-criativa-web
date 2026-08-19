@@ -57,10 +57,27 @@ export function Label(props: LabelHTMLAttributes<HTMLLabelElement>) {
   );
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ onChange, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  function aoMudar(e: React.ChangeEvent<HTMLInputElement>) {
+    // Peculiaridade do React em <input type="number"> controlado: ao digitar "1" num
+    // campo que começa em 0, o DOM vira "01" e o React, pra esse tipo de input,
+    // decide se corrige comparando os valores como NÚMERO (Number("01") === 1) — acha
+    // que não mudou nada e nunca corrige o texto, mesmo o estado já sendo 1. Corrige
+    // a mão aqui, uma vez só, pra todo campo numérico do app.
+    if (props.type === "number") {
+      const bruto = e.target.value;
+      const semZerosAEsquerda = bruto.replace(/^0+(?=\d)/, "");
+      if (semZerosAEsquerda !== bruto) {
+        e.target.value = semZerosAEsquerda;
+      }
+    }
+    onChange?.(e);
+  }
+
   return (
     <input
       {...props}
+      onChange={onChange && aoMudar}
       className={`w-full rounded-lg border border-hairline bg-surface px-4 py-2.5 text-base text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent ${props.className ?? ""}`}
     />
   );
