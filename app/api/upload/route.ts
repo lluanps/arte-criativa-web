@@ -1,33 +1,44 @@
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 /**
- * Autoriza uploads diretos do navegador pro Vercel Blob (o arquivo nunca passa por
- * este servidor, só o token de permissão). Só funciona quando o projeto tem um Blob
- * store conectado na Vercel (Storage → Create → Blob) — a variável
- * BLOB_READ_WRITE_TOKEN é injetada sozinha nesse momento, nada pra configurar aqui.
+ * Upload de foto (Ideias): o arquivo passa pelo nosso servidor (multipart/form-data)
+ * e é gravado no Blob a partir daqui, com put() do SDK server-side — em vez do fluxo
+ * de "client upload" (navegador → vercel.com/api/blob direto), que se mostrou instável
+ * (trava sem nunca resolver em certos casos). Fotos são pequenas o bastante pra isso
+ * não pesar no tempo de resposta da função.
+ *
+ * Só funciona quando o projeto tem um Blob store conectado na Vercel (Storage →
+ * Create → Blob) — a variável BLOB_READ_WRITE_TOKEN é injetada sozinha nesse momento.
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
-
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async () => ({
-        allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
-        addRandomSuffix: true,
-        maximumSizeInBytes: 8 * 1024 * 1024, // 8MB
-      }),
+    const form = await request.formData();
+    const arquivo = form.get("file");
+
+    if (!(arquivo instanceof File)) {
+      return NextResponse.json({ error: "Nenhum arquivo enviado" }, { status: 400 });
+    }
+
+    const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!tiposPermitidos.includes(arquivo.type)) {
+      return NextResponse.json({ error: `Tipo de arquivo não permitido: ${arquivo.type}` }, { status: 400 });
+    }
+
+    const tamanhoMaximo = 8 * 1024 * 1024; // 8MB
+    if (arquivo.size > tamanhoMaximo) {
+      return NextResponse.json({ error: "Imagem maior que 8MB" }, { status: 400 });
+    }
+
+    const blob = await put(arquivo.name, arquivo, {
+      access: "public",
+      addRandomSuffix: true,
     });
 
-    return NextResponse.json(jsonResponse);
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
-    // Loga no servidor (aparece nos Runtime Logs da Vercel) além de devolver pro
-    // cliente — sem isso, um erro de configuração (ex: token do Blob ausente) só
-    // aparecia como "400" pelado nos logs, sem nenhuma pista do motivo real.
-    console.error("Erro ao autorizar upload no Blob:", error);
+    console.error("Erro ao enviar foto pro Blob:", error);
     const mensagem = error instanceof Error ? error.message : "Erro desconhecido";
-    return NextResponse.json({ error: mensagem }, { status: 400 });
+    return NextResponse.json({ error: mensagem }, { status: 500 });
   }
 }

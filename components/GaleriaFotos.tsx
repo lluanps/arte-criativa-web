@@ -1,15 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
 import { Button, Input } from "@/components/ui";
 import { IconX } from "@/components/Icon";
 
 /**
- * Galeria de fotos com duas formas de adicionar: enviar arquivo (sobe direto pro
- * Vercel Blob, via /api/upload) ou colar um link já pronto. O upload só funciona
- * depois que o Blob store for conectado ao projeto na Vercel — até lá, colar link
- * continua funcionando normalmente.
+ * Galeria de fotos com duas formas de adicionar: enviar arquivo (sobe pro nosso
+ * servidor via /api/upload, que grava no Vercel Blob) ou colar um link já pronto.
+ * O upload só funciona depois que o Blob store for conectado ao projeto na Vercel —
+ * até lá, colar link continua funcionando normalmente.
  */
 export function GaleriaFotos({ urls, onChange }: { urls: string[]; onChange: (urls: string[]) => void }) {
   const [link, setLink] = useState("");
@@ -34,14 +33,17 @@ export function GaleriaFotos({ urls, onChange }: { urls: string[]; onChange: (ur
     setErro(null);
     setEnviando(true);
     try {
-      const blob = await upload(arquivo.name, arquivo, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
-      onChange([...urls, blob.url]);
+      const formData = new FormData();
+      formData.append("file", arquivo);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const dados = await res.json();
+      if (!res.ok) {
+        throw new Error(dados.error ?? `Erro HTTP ${res.status}`);
+      }
+      onChange([...urls, dados.url as string]);
     } catch (e) {
       // Mostra o motivo de verdade (ex: token do Blob ausente) em vez de um texto
-      // genérico — o erro do @vercel/blob já vem com a mensagem específica.
+      // genérico.
       const detalhe = e instanceof Error ? e.message : null;
       setErro(detalhe ? `Não deu pra enviar a imagem: ${detalhe}` : "Não deu pra enviar a imagem.");
     } finally {
