@@ -121,15 +121,20 @@ export default function ProdutosPage() {
     });
     if (confirmacao !== "excluir") return;
 
+    let motivoBloqueio: string;
     try {
       await api.del(`/produtos/${produto.id}`);
       await carregar();
       return;
     } catch (e) {
-      if (!(e instanceof ApiError) || e.status !== 409) {
+      // 422 = bloqueio já detectado pela API antes de tentar excluir (o caso normal,
+      // com a lista específica do que está vinculado). 409 fica como rede de segurança
+      // pra uma violação de FK que a checagem não previu.
+      if (!(e instanceof ApiError) || (e.status !== 422 && e.status !== 409)) {
         setErro(e instanceof ApiError ? e.message : "Erro ao excluir produto");
         return;
       }
+      motivoBloqueio = e.message;
     }
 
     // Bloqueado por vínculo (movimentações/vendas/receita/tutorial). Se foi cadastro
@@ -138,7 +143,7 @@ export default function ProdutosPage() {
     const escolha = await perguntar({
       titulo: "Não é possível excluir",
       descricao:
-        "Existem outros registros vinculados a este item (ex: movimentações, vendas, receita ou tutorial).\n\n" +
+        `${motivoBloqueio}\n\n` +
         "Foi um cadastro por engano, sem venda de verdade? Nesse caso dá pra excluir tudo de vez.",
       tone: "warning",
       acoes: [
@@ -158,8 +163,9 @@ export default function ProdutosPage() {
       await api.del(`/produtos/${produto.id}/definitivo`);
       await carregar();
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409) {
-        // Tinha venda de verdade — a API recusou o cascade. Cai pra oferecer desativar.
+      // 422 = IllegalStateException (tinha venda de verdade); 409 fica como rede de
+      // segurança pra uma violação de FK não prevista pela checagem.
+      if (e instanceof ApiError && (e.status === 422 || e.status === 409)) {
         await oferecerDesativar(produto, e.message);
       } else {
         setErro(e instanceof ApiError ? e.message : "Erro ao excluir definitivamente");
