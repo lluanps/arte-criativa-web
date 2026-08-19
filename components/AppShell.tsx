@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { AlertaEstoqueBaixo } from "@/components/AlertaEstoqueBaixo";
 import { Nav } from "@/components/Nav";
 import { obterSessao } from "@/lib/auth";
 
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Nav />
+      <AlertaEstoqueBaixo />
       <div className="min-w-0 flex-1">{children}</div>
     </>
   );
