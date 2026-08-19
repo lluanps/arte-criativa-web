@@ -231,3 +231,20 @@ export function IconLock(props: IconProps) {
     </Base>
   );
 }
+
+export function IconStar(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 3.5 14.5 9.2 20.5 9.9 16 13.9 17.3 20 12 16.8 6.7 20 8 13.9 3.5 9.9 9.5 9.2Z" />
+    </Base>
+  );
+}
+
+export function IconSparkles(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M11 4 12.3 8 16 9.3 12.3 10.6 11 14.6 9.7 10.6 6 9.3 9.7 8Z" fill="currentColor" stroke="none" />
+      <path d="M17.5 14 18.3 16.3 20.5 17.1 18.3 17.9 17.5 20.2 16.7 17.9 14.5 17.1 16.7 16.3Z" fill="currentColor" stroke="none" />
+    </Base>
+  );
+}

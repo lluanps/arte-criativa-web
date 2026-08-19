@@ -63,6 +63,21 @@ export default function ProdutosPage() {
 
   useEffect(() => {
     carregar();
+
+    // Vem de "Transformar em produto" numa ideia (app/ideias/[id]) — pré-preenche o
+    // formulário e já abre. Lido direto da URL (não useSearchParams) pra não precisar
+    // de Suspense boundary só pra isso.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("novaIdeia") === "1") {
+      setForm({
+        ...PRODUTO_VAZIO,
+        nome: params.get("nome") ?? "",
+        descricao: params.get("descricao") ?? "",
+        fotoUrl: params.get("fotoUrl") ?? "",
+      });
+      setMostrarForm(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   async function criar(e: React.FormEvent) {

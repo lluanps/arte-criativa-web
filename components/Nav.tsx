@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { IconBag, IconBook, IconBox, IconCandle, IconClipboard, IconHome, IconLogOut, IconMenu, IconWallet, IconX } from "@/components/Icon";
+import { IconBag, IconBook, IconBox, IconCandle, IconClipboard, IconHome, IconLogOut, IconMenu, IconSparkles, IconWallet, IconX } from "@/components/Icon";
 import { limparSessao, obterSessao } from "@/lib/auth";
 
 const links = [
@@ -14,6 +14,7 @@ const links = [
   { href: "/vendas", label: "Vendas", Icon: IconBag },
   { href: "/financeiro", label: "Financeiro", Icon: IconWallet },
   { href: "/tutoriais", label: "Tutoriais", Icon: IconBook },
+  { href: "/ideias", label: "Ideias", Icon: IconSparkles },
 ];
 
 /**

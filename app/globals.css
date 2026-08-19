@@ -102,3 +102,49 @@ body {
 .tabular-figures {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Prévia de markdown básico (Ideias): o Tailwind Preflight zera margem/list-style de
+ * tudo, e o projeto não usa o plugin @tailwindcss/typography — então sem isso aqui a
+ * prévia sairia com título, lista e parágrafo todos com a cara de texto corrido.
+ */
+.markdown-basico :where(h1, h2, h3) {
+  font-weight: 700;
+  margin-top: 0.75em;
+  margin-bottom: 0.35em;
+}
+.markdown-basico h1 {
+  font-size: 1.4em;
+}
+.markdown-basico h2 {
+  font-size: 1.2em;
+}
+.markdown-basico h3 {
+  font-size: 1.05em;
+}
+.markdown-basico p {
+  margin-bottom: 0.6em;
+}
+.markdown-basico ul {
+  list-style: disc;
+  padding-left: 1.4em;
+  margin-bottom: 0.6em;
+}
+.markdown-basico ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+  margin-bottom: 0.6em;
+}
+.markdown-basico li {
+  margin-bottom: 0.2em;
+}
+.markdown-basico a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.markdown-basico > :first-child {
+  margin-top: 0;
+}
+.markdown-basico > :last-child {
+  margin-bottom: 0;
+}
