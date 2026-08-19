@@ -16,8 +16,10 @@ import {
 import { CategoriaResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
+import { GaleriaFotos } from "@/components/GaleriaFotos";
 
 const MOTIVOS: MotivoMovimentacaoProduto[] = ["PRODUCAO", "VENDA", "AJUSTE", "PERDA"];
+const MAX_FOTOS = 5;
 
 export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -59,7 +61,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
         precoVenda: p.precoVenda,
         margemDesejadaPercentual: p.margemDesejadaPercentual,
         estoqueMinimo: p.estoqueMinimo,
-        fotoUrl: p.fotoUrl ?? "",
+        fotosUrls: p.fotosUrls,
         ativo: p.ativo,
       });
       setMovimentacoes(movs);
@@ -219,7 +221,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
             </div>
             <div>
-              <Label htmlFor="fotoUrl">URL da foto</Label>
+              <Label>Fotos (até {MAX_FOTOS})</Label>
               <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
                 <button
                   type="button"
@@ -239,11 +241,10 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                   🎨 Criar arte no Canva
                 </button>
               </div>
-              <Input
-                id="fotoUrl"
-                placeholder="https://..."
-                value={form.fotoUrl ?? ""}
-                onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })}
+              <GaleriaFotos
+                urls={form.fotosUrls ?? []}
+                onChange={(fotosUrls) => setForm({ ...form, fotosUrls })}
+                max={MAX_FOTOS}
               />
             </div>
             <label className="flex items-center gap-2 text-base text-ink-secondary">

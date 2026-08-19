@@ -10,8 +10,11 @@ import { VendaResponse } from "@/types/vendas";
 import { CategoriaResponse } from "@/types/cadastros";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
+import { GaleriaFotos } from "@/components/GaleriaFotos";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup } from "@/components/Icon";
+
+const MAX_FOTOS = 5;
 
 const PRODUTO_VAZIO: ProdutoRequest = {
   nome: "",
@@ -20,7 +23,7 @@ const PRODUTO_VAZIO: ProdutoRequest = {
   volumeMl: null,
   precoVenda: 0,
   estoqueMinimo: 0,
-  fotoUrl: "",
+  fotosUrls: [],
 };
 
 function iconeDoProduto(categoria: string | null) {
@@ -69,11 +72,12 @@ export default function ProdutosPage() {
     // de Suspense boundary só pra isso.
     const params = new URLSearchParams(window.location.search);
     if (params.get("novaIdeia") === "1") {
+      const fotoDaIdeia = params.get("fotoUrl");
       setForm({
         ...PRODUTO_VAZIO,
         nome: params.get("nome") ?? "",
         descricao: params.get("descricao") ?? "",
-        fotoUrl: params.get("fotoUrl") ?? "",
+        fotosUrls: fotoDaIdeia ? [fotoDaIdeia] : [],
       });
       setMostrarForm(true);
       window.history.replaceState(null, "", window.location.pathname);
@@ -285,7 +289,7 @@ export default function ProdutosPage() {
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="fotoUrl">URL da foto</Label>
+              <Label>Fotos (até {MAX_FOTOS})</Label>
               <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
                 <button
                   type="button"
@@ -305,11 +309,10 @@ export default function ProdutosPage() {
                   🎨 Criar arte no Canva
                 </button>
               </div>
-              <Input
-                id="fotoUrl"
-                placeholder="https://..."
-                value={form.fotoUrl ?? ""}
-                onChange={(e) => setForm({ ...form, fotoUrl: e.target.value })}
+              <GaleriaFotos
+                urls={form.fotosUrls ?? []}
+                onChange={(fotosUrls) => setForm({ ...form, fotosUrls })}
+                max={MAX_FOTOS}
               />
             </div>
             <div className="sm:col-span-2">
@@ -371,13 +374,22 @@ export default function ProdutosPage() {
                       <tr key={produto.id} className="border-b border-hairline last:border-0">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3.5">
-                            <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                                estoqueBaixo ? "bg-warning-soft text-warning" : "bg-good-soft text-good"
-                              }`}
-                            >
-                              <Icone className="h-5 w-5" />
-                            </div>
+                            {produto.fotosUrls[0] ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- URL dinâmica (Blob ou link externo)
+                              <img
+                                src={produto.fotosUrls[0]}
+                                alt=""
+                                className="h-11 w-11 shrink-0 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <div
+                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                                  estoqueBaixo ? "bg-warning-soft text-warning" : "bg-good-soft text-good"
+                                }`}
+                              >
+                                <Icone className="h-5 w-5" />
+                              </div>
+                            )}
                             <div>
                               <Link href={`/estoque/produtos/${produto.id}`} className="font-semibold text-ink hover:underline">
                                 {produto.nome}

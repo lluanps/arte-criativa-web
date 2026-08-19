@@ -9,15 +9,27 @@ import { IconX } from "@/components/Icon";
  * servidor via /api/upload, que grava no Vercel Blob) ou colar um link já pronto.
  * O upload só funciona depois que o Blob store for conectado ao projeto na Vercel —
  * até lá, colar link continua funcionando normalmente.
+ *
+ * `max` (opcional) limita quantas fotos cabem — passado esse número, os controles de
+ * adicionar somem e vira só uma mensagem "X/max".
  */
-export function GaleriaFotos({ urls, onChange }: { urls: string[]; onChange: (urls: string[]) => void }) {
+export function GaleriaFotos({
+  urls,
+  onChange,
+  max,
+}: {
+  urls: string[];
+  onChange: (urls: string[]) => void;
+  max?: number;
+}) {
   const [link, setLink] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const inputArquivoRef = useRef<HTMLInputElement>(null);
+  const noLimite = max !== undefined && urls.length >= max;
 
   function adicionarLink() {
-    if (!link.trim()) return;
+    if (!link.trim() || noLimite) return;
     onChange([...urls, link.trim()]);
     setLink("");
   }
@@ -29,7 +41,7 @@ export function GaleriaFotos({ urls, onChange }: { urls: string[]; onChange: (ur
   async function aoSelecionarArquivo(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0];
     e.target.value = ""; // permite selecionar o mesmo arquivo de novo depois, se precisar
-    if (!arquivo) return;
+    if (!arquivo || noLimite) return;
     setErro(null);
     setEnviando(true);
     try {
@@ -77,21 +89,32 @@ export function GaleriaFotos({ urls, onChange }: { urls: string[]; onChange: (ur
 
       {erro && <p className="mb-2 text-sm text-critical">{erro}</p>}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <input ref={inputArquivoRef} type="file" accept="image/*" className="hidden" onChange={aoSelecionarArquivo} />
-        <Button type="button" variant="secondary" onClick={() => inputArquivoRef.current?.click()} disabled={enviando}>
-          {enviando ? "Enviando..." : "📷 Enviar foto"}
-        </Button>
-        <Input
-          placeholder="ou cole um link de imagem"
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          className="min-w-[180px] flex-1"
-        />
-        <Button type="button" variant="secondary" onClick={adicionarLink}>
-          Adicionar link
-        </Button>
-      </div>
+      {noLimite ? (
+        <p className="text-sm text-ink-faint">
+          {urls.length}/{max} fotos — remova uma pra adicionar outra.
+        </p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <input ref={inputArquivoRef} type="file" accept="image/*" className="hidden" onChange={aoSelecionarArquivo} />
+          <Button type="button" variant="secondary" onClick={() => inputArquivoRef.current?.click()} disabled={enviando}>
+            {enviando ? "Enviando..." : "📷 Enviar foto"}
+          </Button>
+          <Input
+            placeholder="ou cole um link de imagem"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            className="min-w-[180px] flex-1"
+          />
+          <Button type="button" variant="secondary" onClick={adicionarLink}>
+            Adicionar link
+          </Button>
+          {max !== undefined && (
+            <span className="text-sm text-ink-faint">
+              {urls.length}/{max}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
