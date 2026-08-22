@@ -121,12 +121,17 @@ export default function MateriasPrimasPage() {
               <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
               <Input
                 id="unidadeMedida"
-                placeholder="g, ml, un..."
+                list="unidades-medida-sugeridas"
+                placeholder="g, kg, ml, l, cm, m, un..."
                 required
                 value={form.unidadeMedida}
                 onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
               />
               {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
+              <p className="mt-1 text-sm text-ink-secondary">
+                Usando g, kg, ml, l, cm, m ou un a ficha técnica converte automaticamente se a receita usar uma
+                unidade diferente (ex: comprar em kg e usar em g).
+              </p>
             </div>
             <div>
               <Label htmlFor="custoUnitario">Custo unitário *</Label>
@@ -175,6 +180,16 @@ export default function MateriasPrimasPage() {
           </form>
         </Card>
       )}
+
+      <datalist id="unidades-medida-sugeridas">
+        <option value="g" />
+        <option value="kg" />
+        <option value="ml" />
+        <option value="l" />
+        <option value="cm" />
+        <option value="m" />
+        <option value="un" />
+      </datalist>
 
       {carregando ? (
         <p className="text-base text-ink-secondary">Carregando...</p>
