@@ -248,3 +248,12 @@ export function IconSparkles(props: IconProps) {
     </Base>
   );
 }
+
+export function IconSearch(props: IconProps) {
+  return (
+    <Base {...props}>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" />
+    </Base>
+  );
+}

@@ -7,7 +7,8 @@ import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import { ProdutoResponse } from "@/types/estoque";
 import { VendaRequest, VendaResponse } from "@/types/vendas";
 import { CanalVendaResponse, ClienteResponse } from "@/types/cadastros";
-import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { ReceitaResponse } from "@/types/producao";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
 
 interface LinhaItem {
@@ -18,11 +19,30 @@ interface LinhaItem {
 
 const LINHA_VAZIA: LinhaItem = { produtoId: "", quantidade: 1, precoUnitario: 0 };
 
+/**
+ * Mesma faixa usada nas fichas técnicas (ver app/receitas/fichas) — abaixo de 15% mal
+ * cobre imprevisto, 15-40% é sustentável mas apertado, acima de 40% é saudável. Reaproveitada
+ * aqui pra avisar (sem bloquear) quando um desconto empurra a margem de uma linha pra baixo.
+ */
+function tomDaMargem(percentual: number | null): "default" | "success" | "warning" | "danger" {
+  if (percentual === null) return "default";
+  if (percentual < 15) return "danger";
+  if (percentual < 40) return "warning";
+  return "success";
+}
+
+function arredondar2(valor: number): number {
+  return Math.round(valor * 100) / 100;
+}
+
 export default function VendasPage() {
   const [vendas, setVendas] = useState<VendaResponse[]>([]);
   const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
   const [clientes, setClientes] = useState<ClienteResponse[]>([]);
   const [canais, setCanais] = useState<CanalVendaResponse[]>([]);
+  /** custo (ficha técnica) por unidade, por produtoId — produto sem ficha técnica não
+   * entra aqui, então nenhuma margem é estimada pra ele (não dá pra saber o custo). */
+  const [custosPorProduto, setCustosPorProduto] = useState<Record<number, number>>({});
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -30,22 +50,26 @@ export default function VendasPage() {
   const [clienteId, setClienteId] = useState<number | "">("");
   const [canalId, setCanalId] = useState<number | "">("");
   const [itens, setItens] = useState<LinhaItem[]>([{ ...LINHA_VAZIA }]);
+  const [descontoGeral, setDescontoGeral] = useState(0);
   const [salvando, setSalvando] = useState(false);
+  const [copiado, setCopiado] = useState(false);
 
   async function carregar() {
     setCarregando(true);
     setErro(null);
     try {
-      const [dadosVendas, dadosProdutos, dadosClientes, dadosCanais] = await Promise.all([
+      const [dadosVendas, dadosProdutos, dadosClientes, dadosCanais, dadosReceitas] = await Promise.all([
         api.get<VendaResponse[]>("/vendas"),
         api.get<ProdutoResponse[]>("/produtos"),
         api.get<ClienteResponse[]>("/clientes"),
         api.get<CanalVendaResponse[]>("/canais-venda"),
+        api.get<ReceitaResponse[]>("/receitas"),
       ]);
       setVendas(dadosVendas);
       setProdutos(dadosProdutos.filter((p) => p.ativo));
       setClientes(dadosClientes);
       setCanais(dadosCanais);
+      setCustosPorProduto(Object.fromEntries(dadosReceitas.map((r) => [r.produtoId, r.custoTotal])));
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar vendas");
     } finally {
@@ -76,10 +100,87 @@ export default function VendasPage() {
 
   const totalEstimado = itens.reduce((soma, linha) => soma + linha.quantidade * linha.precoUnitario, 0);
 
+  /** Preço de tabela do produto da linha (0 se nenhum produto selecionado) — referência
+   * pra mostrar quanto de desconto o preço unitário editado representa. */
+  function precoTabela(linha: LinhaItem): number {
+    return produtos.find((p) => p.id === linha.produtoId)?.precoVenda ?? 0;
+  }
+
+  /** Aplica o desconto geral ao preço de tabela de cada linha com produto selecionado,
+   * sobrescrevendo o preço unitário atual. Depois disso o usuário pode ajustar o preço
+   * de uma linha específica na mão sem afetar as outras — é um "aplicar uma vez", não
+   * uma fórmula amarrada, então não atrapalha ajuste manual por item. */
+  function aplicarDescontoGeral() {
+    setItens((atual) =>
+      atual.map((linha) =>
+        linha.produtoId === "" ? linha : { ...linha, precoUnitario: arredondar2(precoTabela(linha) * (1 - descontoGeral / 100)) }
+      )
+    );
+  }
+
+  /** Margem percentual da linha com o preço unitário atual, ou null se o produto não
+   * tiver ficha técnica cadastrada (custo desconhecido — não dá pra estimar margem). */
+  function margemPercentualLinha(linha: LinhaItem): number | null {
+    if (linha.produtoId === "" || linha.precoUnitario <= 0) return null;
+    const custo = custosPorProduto[linha.produtoId];
+    if (custo === undefined) return null;
+    return Math.round(((linha.precoUnitario - custo) / linha.precoUnitario) * 1000) / 10;
+  }
+
+  /** Margem percentual do pedido inteiro, só considerando linhas com custo conhecido
+   * (produto sem ficha técnica não entra na conta) — null se nenhuma linha tem custo
+   * conhecido, pra não fingir uma estimativa que não existe. */
+  const margemPedido = (() => {
+    let receita = 0;
+    let custo = 0;
+    let algumaComCusto = false;
+    for (const linha of itens) {
+      if (linha.produtoId === "" || custosPorProduto[linha.produtoId] === undefined) continue;
+      algumaComCusto = true;
+      receita += linha.quantidade * linha.precoUnitario;
+      custo += linha.quantidade * custosPorProduto[linha.produtoId];
+    }
+    if (!algumaComCusto || receita <= 0) return null;
+    return Math.round(((receita - custo) / receita) * 1000) / 10;
+  })();
+
+  function nomeProduto(linha: LinhaItem): string {
+    return produtos.find((p) => p.id === linha.produtoId)?.nome ?? "Produto";
+  }
+
+  function textoOrcamento(): string {
+    const linhas = itens.filter((l) => l.produtoId !== "" && l.quantidade > 0);
+    const partes: string[] = [`Orçamento${clienteId ? " – " + (clientes.find((c) => c.id === clienteId)?.nome ?? "") : ""}`, ""];
+    for (const linha of linhas) {
+      const tabela = precoTabela(linha);
+      const subtotal = linha.quantidade * linha.precoUnitario;
+      const comDesconto = tabela > 0 && linha.precoUnitario < tabela;
+      const descontoPct = comDesconto ? Math.round((1 - linha.precoUnitario / tabela) * 100) : 0;
+      partes.push(
+        `- ${linha.quantidade}x ${nomeProduto(linha)} — ${formatarMoeda(linha.precoUnitario)} cada` +
+          (comDesconto ? ` (de ${formatarMoeda(tabela)}, -${descontoPct}%)` : "") +
+          ` = ${formatarMoeda(subtotal)}`
+      );
+    }
+    partes.push("", `Total: ${formatarMoeda(totalEstimado)}`);
+    return partes.join("\n");
+  }
+
+  async function copiarOrcamento() {
+    try {
+      await navigator.clipboard.writeText(textoOrcamento());
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      setErro("Não foi possível copiar — copie manualmente o texto do orçamento.");
+    }
+  }
+
   function resetarForm() {
     setClienteId("");
     setCanalId("");
     setItens([{ ...LINHA_VAZIA }]);
+    setDescontoGeral(0);
     setMostrarForm(false);
   }
 
@@ -169,68 +270,117 @@ export default function VendasPage() {
             </div>
 
             <div>
+              <Label htmlFor="descontoGeral">Desconto geral (%)</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  id="descontoGeral"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="100"
+                  className="max-w-[120px]"
+                  value={descontoGeral}
+                  onChange={(e) => setDescontoGeral(Number(e.target.value))}
+                />
+                <Button type="button" variant="secondary" onClick={aplicarDescontoGeral}>
+                  Aplicar a todos os itens
+                </Button>
+              </div>
+              <p className="mt-1 text-sm text-ink-secondary">
+                Aplica esse % em cima do preço de tabela de cada item já adicionado — depois disso, ajuste o preço de
+                um item específico na mão se precisar de um desconto diferente só pra ele. Pedidos grandes (100+
+                unidades) funcionam igual, só aumente a quantidade.
+              </p>
+            </div>
+
+            <div>
               <Label>Itens *</Label>
               <div className="grid gap-2">
-                {itens.map((linha, index) => (
-                  <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_100px_120px_auto] sm:items-end">
-                    <div className="col-span-2 sm:col-span-1">
-                      <span className="mb-1 block text-sm text-ink-secondary">Produto</span>
-                      <Select
-                        value={linha.produtoId}
-                        onChange={(e) => selecionarProduto(index, Number(e.target.value))}
+                {itens.map((linha, index) => {
+                  const tabela = precoTabela(linha);
+                  const comDesconto = tabela > 0 && linha.precoUnitario < tabela;
+                  const margem = margemPercentualLinha(linha);
+                  return (
+                    <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_100px_120px_auto] sm:items-end">
+                      <div className="col-span-2 sm:col-span-1">
+                        <span className="mb-1 block text-sm text-ink-secondary">Produto</span>
+                        <Select
+                          value={linha.produtoId}
+                          onChange={(e) => selecionarProduto(index, Number(e.target.value))}
+                        >
+                          <option value="">Selecione...</option>
+                          {produtos.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.nome} (estoque: {p.estoqueAtual})
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                      <div>
+                        <span className="mb-1 block text-sm text-ink-secondary">Qtd.</span>
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={linha.quantidade}
+                          onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        <span className="mb-1 block text-sm text-ink-secondary">Preço unit.</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={linha.precoUnitario}
+                          onChange={(e) => atualizarLinha(index, { precoUnitario: Number(e.target.value) })}
+                        />
+                        {(comDesconto || margem !== null) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {comDesconto && (
+                              <span className="text-sm text-ink-secondary">
+                                -{Math.round((1 - linha.precoUnitario / tabela) * 100)}% da tabela
+                              </span>
+                            )}
+                            {margem !== null && (
+                              <Badge tone={tomDaMargem(margem)}>{margem < 0 ? "abaixo do custo" : `margem ${margem}%`}</Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="col-span-2 sm:col-span-1"
+                        onClick={() => removerLinha(index)}
+                        disabled={itens.length === 1}
                       >
-                        <option value="">Selecione...</option>
-                        {produtos.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.nome} (estoque: {p.estoqueAtual})
-                          </option>
-                        ))}
-                      </Select>
+                        Remover
+                      </Button>
                     </div>
-                    <div>
-                      <span className="mb-1 block text-sm text-ink-secondary">Qtd.</span>
-                      <Input
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={linha.quantidade}
-                        onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
-                      />
-                    </div>
-                    <div>
-                      <span className="mb-1 block text-sm text-ink-secondary">Preço unit.</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={linha.precoUnitario}
-                        onChange={(e) => atualizarLinha(index, { precoUnitario: Number(e.target.value) })}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="col-span-2 sm:col-span-1"
-                      onClick={() => removerLinha(index)}
-                      disabled={itens.length === 1}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <Button type="button" variant="secondary" className="mt-2" onClick={adicionarLinha}>
                 + Adicionar item
               </Button>
             </div>
 
-            <div className="flex items-center justify-between border-t border-hairline pt-4">
-              <span className="text-base text-ink-secondary">
-                Total estimado: <strong>{formatarMoeda(totalEstimado)}</strong>
-              </span>
-              <Button type="submit" disabled={salvando}>
-                {salvando ? "Registrando..." : "Registrar venda"}
-              </Button>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-base text-ink-secondary">
+                  Total estimado: <strong>{formatarMoeda(totalEstimado)}</strong>
+                </span>
+                {margemPedido !== null && <Badge tone={tomDaMargem(margemPedido)}>margem do pedido {margemPedido}%</Badge>}
+              </div>
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="secondary" onClick={copiarOrcamento}>
+                  {copiado ? "Copiado!" : "Copiar orçamento"}
+                </Button>
+                <Button type="submit" disabled={salvando}>
+                  {salvando ? "Registrando..." : "Registrar venda"}
+                </Button>
+              </div>
             </div>
           </form>
         </Card>

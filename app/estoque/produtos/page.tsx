@@ -8,13 +8,16 @@ import { formatarMoeda } from "@/lib/format";
 import { ProdutoRequest, ProdutoResponse } from "@/types/estoque";
 import { VendaResponse } from "@/types/vendas";
 import { CategoriaResponse } from "@/types/cadastros";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { GaleriaFotos } from "@/components/GaleriaFotos";
 import { useConfirm } from "@/components/ConfirmProvider";
-import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup } from "@/components/Icon";
+import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup, IconSearch } from "@/components/Icon";
+import { alternarOrdenacao, compararValores, Ordenacao } from "@/lib/ordenar";
 
 const MAX_FOTOS = 5;
+
+type CampoOrdenacao = "nome" | "categoriaNome" | "volumeMl" | "precoVenda" | "estoqueAtual";
 
 const PRODUTO_VAZIO: ProdutoRequest = {
   nome: "",
@@ -44,6 +47,12 @@ export default function ProdutosPage() {
   const [form, setForm] = useState<ProdutoRequest>(PRODUTO_VAZIO);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
+
+  const [busca, setBusca] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState<number | "">("");
+  const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativos" | "inativos">("todos");
+  const [apenasEstoqueBaixo, setApenasEstoqueBaixo] = useState(false);
+  const [ordenacao, setOrdenacao] = useState<Ordenacao<CampoOrdenacao> | null>(null);
 
   async function carregar() {
     setCarregando(true);
@@ -201,6 +210,39 @@ export default function ProdutosPage() {
   const ticketMedio = vendasDoMes.length > 0 ? vendidoNoMes / vendasDoMes.length : 0;
   const estoqueBaixoCount = produtos.filter((p) => p.estoqueAtual <= p.estoqueMinimo).length;
 
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const produtosFiltrados = produtos.filter((p) => {
+    if (buscaNormalizada && !p.nome.toLowerCase().includes(buscaNormalizada)) return false;
+    if (filtroCategoria !== "" && p.categoriaId !== filtroCategoria) return false;
+    if (filtroStatus === "ativos" && !p.ativo) return false;
+    if (filtroStatus === "inativos" && p.ativo) return false;
+    if (apenasEstoqueBaixo && p.estoqueAtual > p.estoqueMinimo) return false;
+    return true;
+  });
+  const produtosOrdenados = ordenacao
+    ? [...produtosFiltrados].sort((a, b) => compararValores(a[ordenacao.campo], b[ordenacao.campo], ordenacao.direcao))
+    : produtosFiltrados;
+  const filtroAtivo = buscaNormalizada !== "" || filtroCategoria !== "" || filtroStatus !== "todos" || apenasEstoqueBaixo;
+
+  function limparFiltros() {
+    setBusca("");
+    setFiltroCategoria("");
+    setFiltroStatus("todos");
+    setApenasEstoqueBaixo(false);
+  }
+
+  function cabecalho(campo: CampoOrdenacao, rotulo: string) {
+    const ativo = ordenacao?.campo === campo;
+    return (
+      <th
+        className="cursor-pointer select-none px-5 py-4 font-bold hover:text-ink"
+        onClick={() => setOrdenacao((atual) => (atual ? alternarOrdenacao(atual, campo) : { campo, direcao: "asc" }))}
+      >
+        {rotulo} <span className={ativo ? "text-ink" : "text-transparent"}>{ativo && ordenacao?.direcao === "desc" ? "▼" : "▲"}</span>
+      </th>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
@@ -349,23 +391,80 @@ export default function ProdutosPage() {
             </Card>
           </div>
 
+          {produtos.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-end gap-3">
+              <div className="min-w-[220px] flex-1">
+                <Label htmlFor="busca">Buscar</Label>
+                <div className="relative">
+                  <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                  <Input
+                    id="busca"
+                    placeholder="Nome do produto..."
+                    className="pl-9"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="w-40">
+                <Label htmlFor="filtroCategoria">Categoria</Label>
+                <Select
+                  id="filtroCategoria"
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value === "" ? "" : Number(e.target.value))}
+                >
+                  <option value="">Todas</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="w-36">
+                <Label htmlFor="filtroStatus">Status</Label>
+                <Select id="filtroStatus" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value as typeof filtroStatus)}>
+                  <option value="todos">Todos</option>
+                  <option value="ativos">Ativos</option>
+                  <option value="inativos">Inativos</option>
+                </Select>
+              </div>
+              <label className="flex h-[46px] items-center gap-2 text-base text-ink-secondary">
+                <input
+                  type="checkbox"
+                  checked={apenasEstoqueBaixo}
+                  onChange={(e) => setApenasEstoqueBaixo(e.target.checked)}
+                  className="h-4 w-4 rounded border-hairline"
+                />
+                Só estoque baixo
+              </label>
+              {filtroAtivo && (
+                <button type="button" onClick={limparFiltros} className="h-[46px] text-sm text-ink-secondary hover:underline">
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+          )}
+
           {produtos.length === 0 ? (
             <EmptyState mensagem="Nenhum produto cadastrado ainda." />
+          ) : produtosFiltrados.length === 0 ? (
+            <EmptyState mensagem="Nenhum produto encontrado com esse filtro." />
           ) : (
             <Card className="overflow-x-auto p-0">
               <table className="w-full text-base">
                 <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-faint">
                   <tr>
-                    <th className="px-5 py-4 font-bold">Produto</th>
-                    <th className="px-5 py-4 font-bold">Categoria</th>
-                    <th className="px-5 py-4 font-bold">Volume</th>
-                    <th className="px-5 py-4 font-bold">Preço</th>
-                    <th className="px-5 py-4 font-bold">Estoque</th>
+                    {cabecalho("nome", "Produto")}
+                    {cabecalho("categoriaNome", "Categoria")}
+                    {cabecalho("volumeMl", "Volume")}
+                    {cabecalho("precoVenda", "Preço")}
+                    {cabecalho("estoqueAtual", "Estoque")}
                     <th className="px-5 py-4"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {produtos.map((produto) => {
+                  {produtosOrdenados.map((produto) => {
                     const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
                     const referencia = Math.max(produto.estoqueMinimo * 3, 1);
                     const pctBarra = Math.max(6, Math.min(100, (produto.estoqueAtual / referencia) * 100));
