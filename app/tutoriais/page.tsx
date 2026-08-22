@@ -217,7 +217,7 @@ export default function TutoriaisPage() {
             <Link
               key={t.id}
               href={`/tutoriais/${t.id}`}
-              className="block rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover hover:bg-surface-hover"
+              className="block rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-ink">{t.titulo}</h3>

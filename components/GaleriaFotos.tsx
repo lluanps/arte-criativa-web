@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button, Input } from "@/components/ui";
-import { IconX } from "@/components/Icon";
+import { IconCamera, IconX } from "@/components/Icon";
 
 /**
  * Galeria de fotos com duas formas de adicionar: enviar arquivo (sobe pro nosso
@@ -97,7 +97,13 @@ export function GaleriaFotos({
         <div className="flex flex-wrap items-center gap-2">
           <input ref={inputArquivoRef} type="file" accept="image/*" className="hidden" onChange={aoSelecionarArquivo} />
           <Button type="button" variant="secondary" onClick={() => inputArquivoRef.current?.click()} disabled={enviando}>
-            {enviando ? "Enviando..." : "📷 Enviar foto"}
+            {enviando ? (
+              "Enviando..."
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <IconCamera className="h-4 w-4" /> Enviar foto
+              </span>
+            )}
           </Button>
           <Input
             placeholder="ou cole um link de imagem"

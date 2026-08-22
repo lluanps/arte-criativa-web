@@ -123,6 +123,12 @@ export default function CanaisVendaPage() {
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+              <tr>
+                <th className="px-5 py-4">Nome</th>
+                <th className="px-5 py-4" />
+              </tr>
+            </thead>
             <tbody>
               {canais.map((canal) => (
                 <tr key={canal.id} className="border-b border-hairline last:border-0">

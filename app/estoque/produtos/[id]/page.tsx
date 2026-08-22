@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { criarArteNoCanva, gerarDescricaoComChatGPT, gerarImagemComChatGPT } from "@/lib/ai-shortcuts";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
@@ -17,12 +18,16 @@ import { CategoriaResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { GaleriaFotos } from "@/components/GaleriaFotos";
+import { IconImage, IconPalette, IconSparkles } from "@/components/Icon";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const MOTIVOS: MotivoMovimentacaoProduto[] = ["PRODUCAO", "VENDA", "AJUSTE", "PERDA"];
 const MAX_FOTOS = 5;
 
 export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const perguntar = useConfirm();
 
   const [produto, setProduto] = useState<ProdutoResponse | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoResponse[]>([]);
@@ -32,6 +37,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
 
   const [form, setForm] = useState<ProdutoRequest | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
 
   const [movForm, setMovForm] = useState<MovimentacaoProdutoRequest>({
@@ -99,6 +105,91 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
     }
   }
 
+  async function desativar() {
+    if (!produto) return;
+    try {
+      await api.put(`/produtos/${produto.id}`, { ...produto, ativo: false });
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao desativar produto");
+    }
+  }
+
+  async function oferecerDesativar(motivo: string) {
+    const escolha = await perguntar({
+      titulo: "Desativar em vez de excluir?",
+      descricao: `${motivo}\n\nUm produto desativado some da tela de vendas e do contador de "produtos ativos", sem apagar o histórico.`,
+      tone: "warning",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "desativar", label: "Desativar produto", variant: "primary" },
+      ],
+    });
+    if (escolha === "desativar") await desativar();
+  }
+
+  async function excluir() {
+    if (!produto) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir "${produto.nome}"?`,
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
+    setExcluindo(true);
+    let motivoBloqueio: string;
+    try {
+      await api.del(`/produtos/${produto.id}`);
+      router.push("/estoque/produtos");
+      return;
+    } catch (e) {
+      if (!(e instanceof ApiError) || (e.status !== 422 && e.status !== 409)) {
+        setErro(e instanceof ApiError ? e.message : "Erro ao excluir produto");
+        setExcluindo(false);
+        return;
+      }
+      motivoBloqueio = e.message;
+    }
+
+    const escolha = await perguntar({
+      titulo: "Não é possível excluir",
+      descricao: `${motivoBloqueio}\n\nFoi um cadastro por engano, sem venda de verdade? Nesse caso dá pra excluir tudo de vez.`,
+      tone: "warning",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "desativar", label: "Desativar produto", variant: "secondary" },
+        { id: "definitivo", label: "Excluir tudo (foi engano)", variant: "danger" },
+      ],
+    });
+
+    if (escolha === "desativar") {
+      await desativar();
+      setExcluindo(false);
+      return;
+    }
+    if (escolha !== "definitivo") {
+      setExcluindo(false);
+      return;
+    }
+
+    try {
+      await api.del(`/produtos/${produto.id}/definitivo`);
+      router.push("/estoque/produtos");
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 422 || e.status === 409)) {
+        await oferecerDesativar(e.message);
+      } else {
+        setErro(e instanceof ApiError ? e.message : "Erro ao excluir definitivamente");
+      }
+      setExcluindo(false);
+    }
+  }
+
   async function registrarMovimentacao(e: React.FormEvent) {
     e.preventDefault();
     setRegistrandoMov(true);
@@ -132,7 +223,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
       <div className="grid gap-8 lg:grid-cols-2">
         <Card>
           <h2 className="mb-4 text-lg font-semibold">Editar produto</h2>
-          <form onSubmit={salvar} className="grid gap-5">
+          <form onSubmit={salvar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
@@ -202,7 +293,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                 onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
               />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <Label htmlFor="descricao">Descrição</Label>
               <button
                 type="button"
@@ -214,13 +305,13 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                     precoVenda: form.precoVenda,
                   })
                 }
-                className="mb-1.5 block text-sm font-medium text-ink-secondary hover:underline"
+                className="mb-1.5 inline-flex items-center gap-1 text-sm font-medium text-ink-secondary hover:underline"
               >
-                ✨ Gerar com ChatGPT
+                <IconSparkles className="h-3.5 w-3.5" /> Gerar com ChatGPT
               </button>
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <Label>Fotos (até {MAX_FOTOS})</Label>
               <div className="mb-1.5 flex gap-3 text-sm font-medium text-ink-secondary">
                 <button
@@ -233,12 +324,12 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                       precoVenda: form.precoVenda,
                     })
                   }
-                  className="hover:underline"
+                  className="inline-flex items-center gap-1 hover:underline"
                 >
-                  🖼️ Gerar imagem com ChatGPT
+                  <IconImage className="h-3.5 w-3.5" /> Gerar imagem com ChatGPT
                 </button>
-                <button type="button" onClick={criarArteNoCanva} className="hover:underline">
-                  🎨 Criar arte no Canva
+                <button type="button" onClick={criarArteNoCanva} className="inline-flex items-center gap-1 hover:underline">
+                  <IconPalette className="h-3.5 w-3.5" /> Criar arte no Canva
                 </button>
               </div>
               <GaleriaFotos
@@ -247,7 +338,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
                 max={MAX_FOTOS}
               />
             </div>
-            <label className="flex items-center gap-2 text-base text-ink-secondary">
+            <label className="flex items-center gap-2 text-base text-ink-secondary sm:col-span-2">
               <input
                 type="checkbox"
                 checked={form.ativo ?? true}
@@ -255,7 +346,10 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
               />
               Ativo
             </label>
-            <div>
+            <div className="flex items-center justify-between border-t border-hairline pt-4 sm:col-span-2">
+              <Button type="button" variant="danger" onClick={excluir} disabled={excluindo}>
+                {excluindo ? "Excluindo..." : "Excluir produto"}
+              </Button>
               <Button type="submit" disabled={salvando}>
                 {salvando ? "Salvando..." : "Salvar alterações"}
               </Button>

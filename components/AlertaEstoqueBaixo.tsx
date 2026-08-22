@@ -149,7 +149,7 @@ export function AlertaEstoqueBaixo() {
   if (ocultoNestaSessao || itens.length === 0) return null;
 
   return (
-    <div className="fixed inset-x-4 top-4 z-[90] sm:inset-x-auto sm:right-4 sm:w-96">
+    <div className="fixed inset-x-4 top-20 z-[90] lg:top-4 sm:inset-x-auto sm:right-4 sm:w-96">
       <div className="rounded-2xl border border-hairline bg-surface p-5 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning-soft text-warning">

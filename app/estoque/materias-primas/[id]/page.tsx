@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import {
@@ -13,11 +14,14 @@ import {
   TipoMovimentacao,
 } from "@/types/estoque";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { useConfirm } from "@/components/ConfirmProvider";
 
 const MOTIVOS: MotivoMovimentacaoMateriaPrima[] = ["COMPRA", "PRODUCAO", "AJUSTE", "PERDA"];
 
 export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const perguntar = useConfirm();
 
   const [materiaPrima, setMateriaPrima] = useState<MateriaPrimaResponse | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoResponse[]>([]);
@@ -26,6 +30,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
 
   const [form, setForm] = useState<MateriaPrimaRequest | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
 
   const [movForm, setMovForm] = useState<MovimentacaoMateriaPrimaRequest>({
@@ -89,6 +94,38 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     }
   }
 
+  async function excluir() {
+    if (!materiaPrima) return;
+    const confirmacao = await perguntar({
+      titulo: `Excluir "${materiaPrima.nome}"?`,
+      descricao: "Essa ação não pode ser desfeita.",
+      tone: "danger",
+      acoes: [
+        { id: "cancelar", label: "Cancelar", variant: "secondary" },
+        { id: "excluir", label: "Excluir", variant: "danger" },
+      ],
+    });
+    if (confirmacao !== "excluir") return;
+
+    setExcluindo(true);
+    try {
+      await api.del(`/materias-primas/${materiaPrima.id}`);
+      router.push("/estoque/materias-primas");
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        await perguntar({
+          titulo: "Não é possível excluir",
+          descricao: e.message,
+          tone: "warning",
+          acoes: [{ id: "entendi", label: "Entendi", variant: "primary" }],
+        });
+      } else {
+        setErro(e instanceof ApiError ? e.message : "Erro ao excluir matéria-prima");
+      }
+      setExcluindo(false);
+    }
+  }
+
   async function registrarMovimentacao(e: React.FormEvent) {
     e.preventDefault();
     setRegistrandoMov(true);
@@ -127,7 +164,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
       <div className="grid gap-8 lg:grid-cols-2">
         <Card>
           <h2 className="mb-4 text-lg font-semibold">Editar matéria-prima</h2>
-          <form onSubmit={salvar} className="grid gap-5">
+          <form onSubmit={salvar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="nome">Nome *</Label>
               <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
@@ -192,11 +229,14 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
               />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <Label htmlFor="fornecedor">Fornecedor</Label>
               <Input id="fornecedor" value={form.fornecedor ?? ""} onChange={(e) => setForm({ ...form, fornecedor: e.target.value })} />
             </div>
-            <div>
+            <div className="flex items-center justify-between border-t border-hairline pt-4 sm:col-span-2">
+              <Button type="button" variant="danger" onClick={excluir} disabled={excluindo}>
+                {excluindo ? "Excluindo..." : "Excluir matéria-prima"}
+              </Button>
               <Button type="submit" disabled={salvando}>
                 {salvando ? "Salvando..." : "Salvar alterações"}
               </Button>
