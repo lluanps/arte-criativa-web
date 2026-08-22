@@ -258,6 +258,45 @@ export function IconSearch(props: IconProps) {
   );
 }
 
+export function IconTag(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M11.5 3.5H19.5C20.0523 3.5 20.5 3.94772 20.5 4.5V12.5C20.5 12.7652 20.3946 13.0196 20.2071 13.2071L13.2071 20.2071C12.8166 20.5976 12.1834 20.5976 11.7929 20.2071L3.79289 12.2071C3.60536 12.0196 3.5 11.7652 3.5 11.5V4.5C3.5 3.94772 3.94772 3.5 4.5 3.5H11.5Z" />
+      <circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none" />
+    </Base>
+  );
+}
+
+export function IconImage(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M4 17L9 12L13 16L16 13L20 17" />
+    </Base>
+  );
+}
+
+export function IconPalette(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 3C7 3 3 6.8 3 11.5C3 15 5.5 16.5 8 16.5C8.8 16.5 9 16 8.6 15.4C8.2 14.8 8.4 14 9.2 14H14C18 14 21 11.5 21 8C21 5 17 3 12 3Z" />
+      <circle cx="8" cy="9" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="7" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="9" r="1.1" fill="currentColor" stroke="none" />
+    </Base>
+  );
+}
+
+export function IconCamera(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M4 8H8L9.5 5.5H14.5L16 8H20C20.55 8 21 8.45 21 9V18C21 18.55 20.55 19 20 19H4C3.45 19 3 18.55 3 18V9C3 8.45 3.45 8 4 8Z" />
+      <circle cx="12" cy="13.5" r="3.5" />
+    </Base>
+  );
+}
+
 export function IconEye(props: IconProps) {
   return (
     <Base {...props}>

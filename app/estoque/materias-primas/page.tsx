@@ -5,9 +5,9 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
 import { MateriaPrimaRequest, MateriaPrimaResponse } from "@/types/estoque";
-import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
-import { IconSearch } from "@/components/Icon";
+import { IconAlertTriangle, IconSearch } from "@/components/Icon";
 import { alternarOrdenacao, compararValores, Ordenacao } from "@/lib/ordenar";
 
 type CampoOrdenacao = "nome" | "unidadeMedida" | "custoUnitario" | "estoqueAtual";
@@ -280,6 +280,8 @@ export default function MateriasPrimasPage() {
             <tbody>
               {materiasPrimasOrdenadas.map((mp) => {
                 const estoqueBaixo = mp.estoqueAtual <= mp.estoqueMinimo;
+                const referencia = Math.max(mp.estoqueMinimo * 3, 1);
+                const pctBarra = Math.max(6, Math.min(100, (mp.estoqueAtual / referencia) * 100));
                 return (
                   <tr key={mp.id} className="border-b border-hairline last:border-0">
                     <td className="px-5 py-4 font-medium text-ink">
@@ -289,9 +291,28 @@ export default function MateriasPrimasPage() {
                     </td>
                     <td className="px-5 py-4 text-ink-secondary">{mp.unidadeMedida}</td>
                     <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(mp.custoUnitario)}</td>
-                    <td className={`px-5 py-4 ${estoqueBaixo ? "font-medium text-critical" : "text-ink-secondary"}`}>
-                      {mp.estoqueAtual}
-                      {estoqueBaixo && " ⚠"}
+                    <td className="px-5 py-4">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-hairline">
+                            <span
+                              className={`block h-full rounded-full ${estoqueBaixo ? "bg-warning" : "bg-good"}`}
+                              style={{ width: `${pctBarra}%` }}
+                            />
+                          </div>
+                          {estoqueBaixo && (
+                            <Badge tone="warning">
+                              <span className="flex items-center gap-1">
+                                <IconAlertTriangle className="h-3 w-3" strokeWidth={2.4} />
+                                baixo
+                              </span>
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-sm text-ink-secondary tabular-figures">
+                          {mp.estoqueAtual} {mp.unidadeMedida}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <Link href={`/estoque/materias-primas/${mp.id}`} className="mr-3 text-ink-secondary hover:underline">

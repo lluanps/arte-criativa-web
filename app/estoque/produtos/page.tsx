@@ -12,7 +12,17 @@ import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader,
 import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { GaleriaFotos } from "@/components/GaleriaFotos";
 import { useConfirm } from "@/components/ConfirmProvider";
-import { IconAlertTriangle, IconArrowRight, IconBox, IconCandle, IconCup, IconSearch } from "@/components/Icon";
+import {
+  IconAlertTriangle,
+  IconArrowRight,
+  IconBox,
+  IconCandle,
+  IconCup,
+  IconImage,
+  IconPalette,
+  IconSearch,
+  IconSparkles,
+} from "@/components/Icon";
 import { alternarOrdenacao, compararValores, Ordenacao } from "@/lib/ordenar";
 
 const MAX_FOTOS = 5;
@@ -235,7 +245,7 @@ export default function ProdutosPage() {
     const ativo = ordenacao?.campo === campo;
     return (
       <th
-        className="cursor-pointer select-none px-5 py-4 font-bold hover:text-ink"
+        className="cursor-pointer select-none px-5 py-4 hover:text-ink"
         onClick={() => setOrdenacao((atual) => (atual ? alternarOrdenacao(atual, campo) : { campo, direcao: "asc" }))}
       >
         {rotulo} <span className={ativo ? "text-ink" : "text-transparent"}>{ativo && ordenacao?.direcao === "desc" ? "▼" : "▲"}</span>
@@ -324,9 +334,9 @@ export default function ProdutosPage() {
                     precoVenda: form.precoVenda,
                   })
                 }
-                className="mb-1.5 block text-sm font-medium text-ink-secondary hover:underline"
+                className="mb-1.5 inline-flex items-center gap-1 text-sm font-medium text-ink-secondary hover:underline"
               >
-                ✨ Gerar com ChatGPT
+                <IconSparkles className="h-3.5 w-3.5" /> Gerar com ChatGPT
               </button>
               <Input id="descricao" value={form.descricao ?? ""} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
             </div>
@@ -343,12 +353,12 @@ export default function ProdutosPage() {
                       precoVenda: form.precoVenda,
                     })
                   }
-                  className="hover:underline"
+                  className="inline-flex items-center gap-1 hover:underline"
                 >
-                  🖼️ Gerar imagem com ChatGPT
+                  <IconImage className="h-3.5 w-3.5" /> Gerar imagem com ChatGPT
                 </button>
-                <button type="button" onClick={criarArteNoCanva} className="hover:underline">
-                  🎨 Criar arte no Canva
+                <button type="button" onClick={criarArteNoCanva} className="inline-flex items-center gap-1 hover:underline">
+                  <IconPalette className="h-3.5 w-3.5" /> Criar arte no Canva
                 </button>
               </div>
               <GaleriaFotos
@@ -453,7 +463,7 @@ export default function ProdutosPage() {
           ) : (
             <Card className="overflow-x-auto p-0">
               <table className="w-full text-base">
-                <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-faint">
+                <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
                   <tr>
                     {cabecalho("nome", "Produto")}
                     {cabecalho("categoriaNome", "Categoria")}

@@ -70,11 +70,6 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       <PageHeader
         titulo={`Venda #${venda.id}`}
         descricao={`${formatarDataHora(venda.dataVenda)} · ${venda.clienteNome ?? "Cliente não informado"}${venda.canalNome ? ` · ${venda.canalNome}` : ""}`}
-        acao={
-          <Button variant="danger" onClick={excluir} disabled={excluindo}>
-            {excluindo ? "Excluindo..." : "Excluir venda"}
-          </Button>
-        }
       />
 
       {erro && <ErrorBanner mensagem={erro} />}
@@ -109,6 +104,12 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
           </tfoot>
         </table>
       </Card>
+
+      <div className="mt-6 flex justify-end border-t border-hairline pt-4">
+        <Button variant="danger" onClick={excluir} disabled={excluindo}>
+          {excluindo ? "Excluindo..." : "Excluir venda"}
+        </Button>
+      </div>
     </main>
   );
 }

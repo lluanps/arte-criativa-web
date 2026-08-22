@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui";
+import { IconCheckCircle, IconClipboard } from "@/components/Icon";
 
 const secoes = [
-  { nome: "Fichas técnicas", href: "/receitas/fichas", descricao: "Consumo de matéria-prima por produto" },
-  { nome: "Produção", href: "/receitas/producoes", descricao: "Registrar produção e ver custo calculado" },
+  { nome: "Fichas técnicas", href: "/receitas/fichas", descricao: "Consumo de matéria-prima por produto", Icon: IconClipboard },
+  { nome: "Produção", href: "/receitas/producoes", descricao: "Registrar produção e ver custo calculado", Icon: IconCheckCircle },
 ];
 
 export default function ReceitasPage() {
@@ -15,10 +16,15 @@ export default function ReceitasPage() {
           <Link
             key={secao.href}
             href={secao.href}
-            className="rounded-lg border border-hairline bg-surface p-4 shadow-sm transition-colors hover:bg-surface-hover hover:bg-surface-hover"
+            className="flex items-start gap-4 rounded-2xl border border-hairline bg-surface p-5 shadow-sm transition-colors hover:bg-surface-hover"
           >
-            <h2 className="font-semibold">{secao.nome}</h2>
-            <p className="mt-1 text-base text-ink-secondary">{secao.descricao}</p>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-good-soft text-good">
+              <secao.Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-ink">{secao.nome}</h2>
+              <p className="mt-1 text-base text-ink-secondary">{secao.descricao}</p>
+            </div>
           </Link>
         ))}
       </div>

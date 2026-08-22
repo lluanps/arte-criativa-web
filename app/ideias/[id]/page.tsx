@@ -12,7 +12,7 @@ import { ProdutoResponse } from "@/types/estoque";
 import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { GaleriaFotos } from "@/components/GaleriaFotos";
 import { useConfirm } from "@/components/ConfirmProvider";
-import { IconStar, IconX } from "@/components/Icon";
+import { IconSparkles, IconStar, IconX } from "@/components/Icon";
 
 const LABEL_STATUS: Record<StatusIdeia, string> = {
   IDEIA_SOLTA: "Ideia solta",
@@ -274,7 +274,9 @@ export default function IdeiaDetalhePage({ params }: { params: Promise<{ id: str
           </div>
 
           <div>
-            <p className="mb-2 text-base font-medium text-ink-secondary">✨ Ajuda da IA (abre o ChatGPT com o contexto já pronto)</p>
+            <p className="mb-2 flex items-center gap-1.5 text-base font-medium text-ink-secondary">
+              <IconSparkles className="h-4 w-4" /> Ajuda da IA (abre o ChatGPT com o contexto já pronto)
+            </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-ink-secondary">
               <button type="button" onClick={() => sugerirVariacoesComChatGPT(dadosIdeia)} className="hover:underline">
                 Sugerir variações
