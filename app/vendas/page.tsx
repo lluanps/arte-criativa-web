@@ -335,70 +335,78 @@ export default function VendasPage() {
                   const comDesconto = tabela > 0 && linha.precoUnitario < tabela;
                   const margem = margemPercentualLinha(linha);
                   const custoUnitario = custoUnitarioLinha(linha);
+                  const mostrarInfoExtra = comDesconto || (mostrarLucro && margem !== null);
                   return (
-                    <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_100px_120px_auto] sm:items-end">
-                      <div className="col-span-2 sm:col-span-1">
-                        <span className="mb-1 block text-sm text-ink-secondary">Produto</span>
-                        <Select
-                          value={linha.produtoId}
-                          onChange={(e) => selecionarProduto(index, Number(e.target.value))}
+                    // Grid de 1 linha só (Produto/Qtd/Preço/Remover, altura uniforme) — o texto
+                    // extra (desconto/custo/lucro) fica FORA dessa linha, embaixo, pra não fazer
+                    // a célula de "Preço unit." crescer e desalinhar as outras (sm:items-end
+                    // alinha pelo fundo da linha inteira; se uma célula cresce, as mais curtas
+                    // descem junto e a label delas parece "subir" em relação às outras).
+                    <div key={index}>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_100px_120px_auto] sm:items-end">
+                        <div className="col-span-2 sm:col-span-1">
+                          <span className="mb-1 block text-sm text-ink-secondary">Produto</span>
+                          <Select
+                            value={linha.produtoId}
+                            onChange={(e) => selecionarProduto(index, Number(e.target.value))}
+                          >
+                            <option value="">Selecione...</option>
+                            {produtos.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.nome} (estoque: {p.estoqueAtual})
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                        <div>
+                          <span className="mb-1 block text-sm text-ink-secondary">Qtd.</span>
+                          <Input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={linha.quantidade}
+                            onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
+                          />
+                        </div>
+                        <div>
+                          <span className="mb-1 block text-sm text-ink-secondary">Preço unit.</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={linha.precoUnitario}
+                            onChange={(e) => atualizarLinha(index, { precoUnitario: Number(e.target.value) })}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="col-span-2 sm:col-span-1"
+                          onClick={() => removerLinha(index)}
+                          disabled={itens.length === 1}
                         >
-                          <option value="">Selecione...</option>
-                          {produtos.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.nome} (estoque: {p.estoqueAtual})
-                            </option>
-                          ))}
-                        </Select>
+                          Remover
+                        </Button>
                       </div>
-                      <div>
-                        <span className="mb-1 block text-sm text-ink-secondary">Qtd.</span>
-                        <Input
-                          type="number"
-                          step="1"
-                          min="0"
-                          value={linha.quantidade}
-                          onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div>
-                        <span className="mb-1 block text-sm text-ink-secondary">Preço unit.</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={linha.precoUnitario}
-                          onChange={(e) => atualizarLinha(index, { precoUnitario: Number(e.target.value) })}
-                        />
-                        {(comDesconto || (mostrarLucro && margem !== null)) && (
-                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            {comDesconto && (
-                              <span className="text-sm text-ink-secondary">
-                                -{Math.round((1 - linha.precoUnitario / tabela) * 100)}% da tabela
-                              </span>
-                            )}
-                            {mostrarLucro && margem !== null && custoUnitario !== null && (
-                              <span
-                                className={`text-sm ${corDoTexto(tomDaMargem(margem))} ${
-                                  tomDaMargem(margem) !== "success" ? "font-medium" : ""
-                                }`}
-                              >
-                                custo {formatarMoeda(custoUnitario)} · lucro {formatarMoeda(linha.precoUnitario - custoUnitario)}/un
-                                {margem < 0 && " (abaixo do custo)"}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="col-span-2 sm:col-span-1"
-                        onClick={() => removerLinha(index)}
-                        disabled={itens.length === 1}
-                      >
-                        Remover
-                      </Button>
+                      {mostrarInfoExtra && (
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          {comDesconto && (
+                            <span className="text-sm text-ink-secondary">
+                              -{Math.round((1 - linha.precoUnitario / tabela) * 100)}% da tabela
+                            </span>
+                          )}
+                          {mostrarLucro && margem !== null && custoUnitario !== null && (
+                            <span
+                              className={`text-sm ${corDoTexto(tomDaMargem(margem))} ${
+                                tomDaMargem(margem) !== "success" ? "font-medium" : ""
+                              }`}
+                            >
+                              custo {formatarMoeda(custoUnitario)} · lucro {formatarMoeda(linha.precoUnitario - custoUnitario)}/un
+                              {margem < 0 && " (abaixo do custo)"}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
