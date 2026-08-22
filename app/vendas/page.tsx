@@ -32,6 +32,12 @@ function tomDaMargem(percentual: number | null): "default" | "success" | "warnin
   return "success";
 }
 
+/** Cor de texto pras mesmas 3 faixas de tomDaMargem — usado onde a margem aparece só
+ * como texto colorido (sem o número/badge), pra manter o alerta visual de 3 níveis. */
+function corDoTexto(tom: ReturnType<typeof tomDaMargem>): string {
+  return { default: "text-ink-secondary", success: "text-good", warning: "text-warning", danger: "text-critical" }[tom];
+}
+
 function arredondar2(valor: number): number {
   return Math.round(valor * 100) / 100;
 }
@@ -372,12 +378,14 @@ export default function VendasPage() {
                               </span>
                             )}
                             {mostrarLucro && margem !== null && custoUnitario !== null && (
-                              <>
-                                <span className="text-sm text-ink-secondary">
-                                  custo {formatarMoeda(custoUnitario)} · lucro {formatarMoeda(linha.precoUnitario - custoUnitario)}/un
-                                </span>
-                                <Badge tone={tomDaMargem(margem)}>{margem < 0 ? "abaixo do custo" : `${margem}%`}</Badge>
-                              </>
+                              <span
+                                className={`text-sm ${corDoTexto(tomDaMargem(margem))} ${
+                                  tomDaMargem(margem) !== "success" ? "font-medium" : ""
+                                }`}
+                              >
+                                custo {formatarMoeda(custoUnitario)} · lucro {formatarMoeda(linha.precoUnitario - custoUnitario)}/un
+                                {margem < 0 && " (abaixo do custo)"}
+                              </span>
                             )}
                           </div>
                         )}
