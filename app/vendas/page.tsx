@@ -10,6 +10,7 @@ import { CanalVendaResponse, ClienteResponse } from "@/types/cadastros";
 import { ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
+import { IconEye, IconEyeOff } from "@/components/Icon";
 
 interface LinhaItem {
   produtoId: number | "";
@@ -52,7 +53,10 @@ export default function VendasPage() {
   const [itens, setItens] = useState<LinhaItem[]>([{ ...LINHA_VAZIA }]);
   const [descontoGeral, setDescontoGeral] = useState(0);
   const [salvando, setSalvando] = useState(false);
-  const [copiado, setCopiado] = useState(false);
+  /** Lucro/custo/margem são informação sensível (não é pra cliente ver na tela durante
+   * a negociação) — por isso vêm escondidos por padrão, nunca persistido (sempre volta
+   * a esconder ao recarregar a página), só revelados por esse toggle explícito. */
+  const [mostrarLucro, setMostrarLucro] = useState(false);
 
   async function carregar() {
     setCarregando(true);
@@ -118,30 +122,39 @@ export default function VendasPage() {
     );
   }
 
-  /** Margem percentual da linha com o preço unitário atual, ou null se o produto não
-   * tiver ficha técnica cadastrada (custo desconhecido — não dá pra estimar margem). */
+  /** Custo unitário conhecido da linha (via ficha técnica), ou null se o produto não
+   * tiver ficha técnica cadastrada — não dá pra estimar custo/lucro nesse caso. */
+  function custoUnitarioLinha(linha: LinhaItem): number | null {
+    if (linha.produtoId === "") return null;
+    return custosPorProduto[linha.produtoId] ?? null;
+  }
+
+  /** Margem percentual da linha com o preço unitário atual, ou null se custo desconhecido. */
   function margemPercentualLinha(linha: LinhaItem): number | null {
-    if (linha.produtoId === "" || linha.precoUnitario <= 0) return null;
-    const custo = custosPorProduto[linha.produtoId];
-    if (custo === undefined) return null;
+    const custo = custoUnitarioLinha(linha);
+    if (custo === null || linha.precoUnitario <= 0) return null;
     return Math.round(((linha.precoUnitario - custo) / linha.precoUnitario) * 1000) / 10;
   }
 
-  /** Margem percentual do pedido inteiro, só considerando linhas com custo conhecido
+  /** Custo, lucro e margem % do pedido inteiro, só somando linhas com custo conhecido
    * (produto sem ficha técnica não entra na conta) — null se nenhuma linha tem custo
-   * conhecido, pra não fingir uma estimativa que não existe. */
-  const margemPedido = (() => {
+   * conhecido, pra não fingir uma estimativa que não existe. Não usado no texto do
+   * orçamento (ver textoOrcamento) — essa informação nunca vai pro cliente. */
+  const resumoPedido = (() => {
     let receita = 0;
     let custo = 0;
     let algumaComCusto = false;
     for (const linha of itens) {
-      if (linha.produtoId === "" || custosPorProduto[linha.produtoId] === undefined) continue;
+      const custoLinha = custoUnitarioLinha(linha);
+      if (custoLinha === null) continue;
       algumaComCusto = true;
       receita += linha.quantidade * linha.precoUnitario;
-      custo += linha.quantidade * custosPorProduto[linha.produtoId];
+      custo += linha.quantidade * custoLinha;
     }
-    if (!algumaComCusto || receita <= 0) return null;
-    return Math.round(((receita - custo) / receita) * 1000) / 10;
+    if (!algumaComCusto) return null;
+    const lucro = arredondar2(receita - custo);
+    const percentual = receita > 0 ? Math.round((lucro / receita) * 1000) / 10 : null;
+    return { custo: arredondar2(custo), lucro, percentual };
   })();
 
   function nomeProduto(linha: LinhaItem): string {
@@ -166,14 +179,29 @@ export default function VendasPage() {
     return partes.join("\n");
   }
 
-  async function copiarOrcamento() {
-    try {
-      await navigator.clipboard.writeText(textoOrcamento());
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      setErro("Não foi possível copiar — copie manualmente o texto do orçamento.");
-    }
+  /** Telefone do cliente (se tiver) normalizado pro formato que o WhatsApp espera —
+   * só dígitos, com DDI 55 na frente quando o número não tiver DDI (11 dígitos ou
+   * menos = DDD + número, sem código de país). */
+  function telefoneWhatsApp(): string | null {
+    const cliente = clientes.find((c) => c.id === clienteId);
+    const digitos = cliente?.telefone?.replace(/\D/g, "") ?? "";
+    if (digitos === "") return null;
+    return digitos.length <= 11 ? `55${digitos}` : digitos;
+  }
+
+  /** Abre o WhatsApp com o texto do orçamento pré-preenchido — pro número do cliente
+   * quando cadastrado, ou deixando o usuário escolher o contato quando não. O texto
+   * usado aqui (textoOrcamento) nunca inclui custo/lucro/margem — só o que o cliente
+   * já veria numa negociação normal (produto, quantidade, preço, total). Também copia
+   * pro clipboard como reforço silencioso, caso o pré-preenchimento falhe no navegador. */
+  function enviarOrcamentoNoWhatsApp() {
+    const texto = textoOrcamento();
+    navigator.clipboard.writeText(texto).catch(() => {});
+    const telefone = telefoneWhatsApp();
+    const url = telefone
+      ? `https://api.whatsapp.com/send?phone=${telefone}&text=${encodeURIComponent(texto)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function resetarForm() {
@@ -300,6 +328,7 @@ export default function VendasPage() {
                   const tabela = precoTabela(linha);
                   const comDesconto = tabela > 0 && linha.precoUnitario < tabela;
                   const margem = margemPercentualLinha(linha);
+                  const custoUnitario = custoUnitarioLinha(linha);
                   return (
                     <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_100px_120px_auto] sm:items-end">
                       <div className="col-span-2 sm:col-span-1">
@@ -335,15 +364,20 @@ export default function VendasPage() {
                           value={linha.precoUnitario}
                           onChange={(e) => atualizarLinha(index, { precoUnitario: Number(e.target.value) })}
                         />
-                        {(comDesconto || margem !== null) && (
+                        {(comDesconto || (mostrarLucro && margem !== null)) && (
                           <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             {comDesconto && (
                               <span className="text-sm text-ink-secondary">
                                 -{Math.round((1 - linha.precoUnitario / tabela) * 100)}% da tabela
                               </span>
                             )}
-                            {margem !== null && (
-                              <Badge tone={tomDaMargem(margem)}>{margem < 0 ? "abaixo do custo" : `margem ${margem}%`}</Badge>
+                            {mostrarLucro && margem !== null && custoUnitario !== null && (
+                              <>
+                                <span className="text-sm text-ink-secondary">
+                                  custo {formatarMoeda(custoUnitario)} · lucro {formatarMoeda(linha.precoUnitario - custoUnitario)}/un
+                                </span>
+                                <Badge tone={tomDaMargem(margem)}>{margem < 0 ? "abaixo do custo" : `${margem}%`}</Badge>
+                              </>
                             )}
                           </div>
                         )}
@@ -367,15 +401,36 @@ export default function VendasPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <span className="text-base text-ink-secondary">
                   Total estimado: <strong>{formatarMoeda(totalEstimado)}</strong>
                 </span>
-                {margemPedido !== null && <Badge tone={tomDaMargem(margemPedido)}>margem do pedido {margemPedido}%</Badge>}
+                <button
+                  type="button"
+                  onClick={() => setMostrarLucro((v) => !v)}
+                  title={mostrarLucro ? "Ocultar lucro" : "Ver lucro (não aparece pro cliente)"}
+                  className="text-ink-faint hover:text-ink-secondary"
+                >
+                  {mostrarLucro ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </button>
+                {mostrarLucro &&
+                  (resumoPedido ? (
+                    <span className="flex flex-wrap items-center gap-2 text-base text-ink-secondary">
+                      Custo: <strong>{formatarMoeda(resumoPedido.custo)}</strong> · Lucro:{" "}
+                      <strong className={resumoPedido.lucro < 0 ? "text-critical" : "text-good"}>
+                        {formatarMoeda(resumoPedido.lucro)}
+                      </strong>
+                      {resumoPedido.percentual !== null && (
+                        <Badge tone={tomDaMargem(resumoPedido.percentual)}>{resumoPedido.percentual}%</Badge>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-ink-faint">Nenhum item com ficha técnica cadastrada.</span>
+                  ))}
               </div>
               <div className="flex items-center gap-3">
-                <Button type="button" variant="secondary" onClick={copiarOrcamento}>
-                  {copiado ? "Copiado!" : "Copiar orçamento"}
+                <Button type="button" variant="secondary" onClick={enviarOrcamentoNoWhatsApp}>
+                  Enviar no WhatsApp
                 </Button>
                 <Button type="submit" disabled={salvando}>
                   {salvando ? "Registrando..." : "Registrar venda"}

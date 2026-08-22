@@ -257,3 +257,23 @@ export function IconSearch(props: IconProps) {
     </Base>
   );
 }
+
+export function IconEye(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M2 12C2 12 5.5 5.5 12 5.5C18.5 5.5 22 12 22 12C22 12 18.5 18.5 12 18.5C5.5 18.5 2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </Base>
+  );
+}
+
+export function IconEyeOff(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M9.9 5.8C10.6 5.6 11.3 5.5 12 5.5C18.5 5.5 22 12 22 12C21.5 12.9 20.6 14.2 19.3 15.4" />
+      <path d="M6.2 7.1C3.7 9 2 12 2 12C2 12 5.5 18.5 12 18.5C13.6 18.5 15 18.1 16.2 17.5" />
+      <path d="M9.9 9.9C9.3 10.5 9 11.2 9 12C9 13.7 10.3 15 12 15C12.8 15 13.5 14.7 14.1 14.1" />
+      <line x1="4" y1="4" x2="20" y2="20" />
+    </Base>
+  );
+}
