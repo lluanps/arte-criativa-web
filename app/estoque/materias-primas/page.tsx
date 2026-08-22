@@ -7,6 +7,10 @@ import { formatarMoeda } from "@/lib/format";
 import { MateriaPrimaRequest, MateriaPrimaResponse } from "@/types/estoque";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
+import { IconSearch } from "@/components/Icon";
+import { alternarOrdenacao, compararValores, Ordenacao } from "@/lib/ordenar";
+
+type CampoOrdenacao = "nome" | "unidadeMedida" | "custoUnitario" | "estoqueAtual";
 
 const MATERIA_PRIMA_VAZIA: MateriaPrimaRequest = {
   nome: "",
@@ -26,6 +30,10 @@ export default function MateriasPrimasPage() {
   const [form, setForm] = useState<MateriaPrimaRequest>(MATERIA_PRIMA_VAZIA);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
+
+  const [busca, setBusca] = useState("");
+  const [apenasEstoqueBaixo, setApenasEstoqueBaixo] = useState(false);
+  const [ordenacao, setOrdenacao] = useState<Ordenacao<CampoOrdenacao> | null>(null);
 
   async function carregar() {
     setCarregando(true);
@@ -93,6 +101,34 @@ export default function MateriasPrimasPage() {
       }
       setErro(e instanceof ApiError ? e.message : "Erro ao excluir matéria-prima");
     }
+  }
+
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const materiasPrimasFiltradas = materiasPrimas.filter((mp) => {
+    if (buscaNormalizada && !mp.nome.toLowerCase().includes(buscaNormalizada)) return false;
+    if (apenasEstoqueBaixo && mp.estoqueAtual > mp.estoqueMinimo) return false;
+    return true;
+  });
+  const materiasPrimasOrdenadas = ordenacao
+    ? [...materiasPrimasFiltradas].sort((a, b) => compararValores(a[ordenacao.campo], b[ordenacao.campo], ordenacao.direcao))
+    : materiasPrimasFiltradas;
+  const filtroAtivo = buscaNormalizada !== "" || apenasEstoqueBaixo;
+
+  function limparFiltros() {
+    setBusca("");
+    setApenasEstoqueBaixo(false);
+  }
+
+  function cabecalho(campo: CampoOrdenacao, rotulo: string) {
+    const ativo = ordenacao?.campo === campo;
+    return (
+      <th
+        className="cursor-pointer select-none px-5 py-4 hover:text-ink"
+        onClick={() => setOrdenacao((atual) => (atual ? alternarOrdenacao(atual, campo) : { campo, direcao: "asc" }))}
+      >
+        {rotulo} <span className={ativo ? "text-ink" : "text-transparent"}>{ativo && ordenacao?.direcao === "desc" ? "▼" : "▲"}</span>
+      </th>
+    );
   }
 
   return (
@@ -191,24 +227,58 @@ export default function MateriasPrimasPage() {
         <option value="un" />
       </datalist>
 
+      {!carregando && materiasPrimas.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <div className="min-w-[220px] flex-1">
+            <Label htmlFor="busca">Buscar</Label>
+            <div className="relative">
+              <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+              <Input
+                id="busca"
+                placeholder="Nome da matéria-prima..."
+                className="pl-9"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+          </div>
+          <label className="flex h-[46px] items-center gap-2 text-base text-ink-secondary">
+            <input
+              type="checkbox"
+              checked={apenasEstoqueBaixo}
+              onChange={(e) => setApenasEstoqueBaixo(e.target.checked)}
+              className="h-4 w-4 rounded border-hairline"
+            />
+            Só estoque baixo
+          </label>
+          {filtroAtivo && (
+            <button type="button" onClick={limparFiltros} className="h-[46px] text-sm text-ink-secondary hover:underline">
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      )}
+
       {carregando ? (
         <p className="text-base text-ink-secondary">Carregando...</p>
       ) : materiasPrimas.length === 0 ? (
         <EmptyState mensagem="Nenhuma matéria-prima cadastrada ainda." />
+      ) : materiasPrimasFiltradas.length === 0 ? (
+        <EmptyState mensagem="Nenhuma matéria-prima encontrada com esse filtro." />
       ) : (
         <Card className="overflow-x-auto p-0">
           <table className="w-full text-base">
             <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
               <tr>
-                <th className="px-5 py-4">Nome</th>
-                <th className="px-5 py-4">Unidade</th>
-                <th className="px-5 py-4">Custo unitário</th>
-                <th className="px-5 py-4">Estoque</th>
+                {cabecalho("nome", "Nome")}
+                {cabecalho("unidadeMedida", "Unidade")}
+                {cabecalho("custoUnitario", "Custo unitário")}
+                {cabecalho("estoqueAtual", "Estoque")}
                 <th className="px-5 py-4"></th>
               </tr>
             </thead>
             <tbody>
-              {materiasPrimas.map((mp) => {
+              {materiasPrimasOrdenadas.map((mp) => {
                 const estoqueBaixo = mp.estoqueAtual <= mp.estoqueMinimo;
                 return (
                   <tr key={mp.id} className="border-b border-hairline last:border-0">
