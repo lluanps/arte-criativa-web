@@ -61,6 +61,9 @@ export interface MovimentacaoResponse {
   quantidade: number;
   observacao: string | null;
   dataMovimentacao: string;
+  /** Só preenchido em entrada de matéria-prima com valor pago informado. */
+  valorPago: number | null;
+  custoUnitarioApurado: number | null;
 }
 
 export interface MovimentacaoProdutoRequest {
@@ -74,5 +77,8 @@ export interface MovimentacaoMateriaPrimaRequest {
   tipo: TipoMovimentacao;
   motivo: MotivoMovimentacaoMateriaPrima;
   quantidade: number;
+  /** Opcional — só numa ENTRADA. Quanto foi pago no TOTAL da compra; o backend calcula
+   * o custo unitário sozinho (valorPago ÷ quantidade) e atualiza o custo médio. */
+  valorPago?: number | null;
   observacao?: string | null;
 }

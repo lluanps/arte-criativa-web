@@ -32,6 +32,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     tipo: "ENTRADA",
     motivo: "COMPRA",
     quantidade: 0,
+    valorPago: null,
     observacao: "",
   });
   const [registrandoMov, setRegistrandoMov] = useState(false);
@@ -94,7 +95,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     setErroMov(null);
     try {
       await api.post(`/materias-primas/${id}/movimentacoes`, movForm);
-      setMovForm({ tipo: "ENTRADA", motivo: "COMPRA", quantidade: 0, observacao: "" });
+      setMovForm({ tipo: "ENTRADA", motivo: "COMPRA", quantidade: 0, valorPago: null, observacao: "" });
       await carregar();
     } catch (e) {
       setErroMov(e instanceof ApiError ? e.message : "Erro ao registrar movimentação");
@@ -136,11 +137,25 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
               <Input
                 id="unidadeMedida"
+                list="unidades-medida-sugeridas"
                 required
                 value={form.unidadeMedida}
                 onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
               />
               {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
+              <p className="mt-1 text-sm text-ink-secondary">
+                Usando g, kg, ml, l, cm, m ou un a ficha técnica converte automaticamente se a receita usar uma
+                unidade diferente.
+              </p>
+              <datalist id="unidades-medida-sugeridas">
+                <option value="g" />
+                <option value="kg" />
+                <option value="ml" />
+                <option value="l" />
+                <option value="cm" />
+                <option value="m" />
+                <option value="un" />
+              </datalist>
             </div>
             <div>
               <Label htmlFor="custoUnitario">Custo unitário *</Label>
@@ -199,7 +214,10 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 <Select
                   id="tipo"
                   value={movForm.tipo}
-                  onChange={(e) => setMovForm({ ...movForm, tipo: e.target.value as TipoMovimentacao })}
+                  onChange={(e) => {
+                    const tipo = e.target.value as TipoMovimentacao;
+                    setMovForm({ ...movForm, tipo, valorPago: tipo === "ENTRADA" ? movForm.valorPago : null });
+                  }}
                 >
                   <option value="ENTRADA">Entrada</option>
                   <option value="SAIDA">Saída</option>
@@ -232,6 +250,27 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 onChange={(e) => setMovForm({ ...movForm, quantidade: Number(e.target.value) })}
               />
             </div>
+            {movForm.tipo === "ENTRADA" && (
+              <div>
+                <Label htmlFor="valorPago">Valor pago no total (opcional)</Label>
+                <Input
+                  id="valorPago"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="ex: 100,00 por 3kg"
+                  value={movForm.valorPago ?? ""}
+                  onChange={(e) =>
+                    setMovForm({ ...movForm, valorPago: e.target.value === "" ? null : Number(e.target.value) })
+                  }
+                />
+                <p className="mt-1 text-sm text-ink-secondary">
+                  {movForm.valorPago && movForm.quantidade > 0
+                    ? `≈ ${formatarMoeda(movForm.valorPago / movForm.quantidade)} por ${materiaPrima.unidadeMedida} — vira o novo custo unitário (média ponderada com o estoque atual).`
+                    : "Preenche pra o sistema calcular o custo unitário sozinho (valor ÷ quantidade) em vez de você editar \"Custo unitário\" na mão."}
+                </p>
+              </div>
+            )}
             <div>
               <Label htmlFor="observacao">Observação</Label>
               <Input
@@ -261,6 +300,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 <th className="px-5 py-4">Tipo</th>
                 <th className="px-5 py-4">Motivo</th>
                 <th className="px-5 py-4">Quantidade</th>
+                <th className="px-5 py-4">Valor pago</th>
                 <th className="px-5 py-4">Observação</th>
               </tr>
             </thead>
@@ -273,6 +313,11 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                   </td>
                   <td className="px-5 py-4 text-ink-secondary">{mov.motivo}</td>
                   <td className="px-5 py-4 text-ink-secondary">{mov.quantidade}</td>
+                  <td className="px-5 py-4 text-ink-secondary">
+                    {mov.valorPago !== null
+                      ? `${formatarMoeda(mov.valorPago)} (${formatarMoeda(mov.custoUnitarioApurado ?? 0)}/${materiaPrima.unidadeMedida})`
+                      : "—"}
+                  </td>
                   <td className="px-5 py-4 text-ink-secondary">{mov.observacao ?? "—"}</td>
                 </tr>
               ))}

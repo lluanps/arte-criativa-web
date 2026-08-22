@@ -13,6 +13,8 @@ import { useConfirm } from "@/components/ConfirmProvider";
 interface LinhaItem {
   materiaPrimaId: number | "";
   quantidade: number;
+  /** "" = usa a mesma unidade cadastrada na matéria-prima (sem conversão). */
+  unidadeMedida: string;
 }
 
 function tomDaMargem(percentual: number | null): "default" | "success" | "warning" | "danger" {
@@ -38,6 +40,8 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
   const [nome, setNome] = useState("");
   const [rendimento, setRendimento] = useState(1);
   const [itens, setItens] = useState<LinhaItem[]>([]);
+  const [custoMaoDeObra, setCustoMaoDeObra] = useState(0);
+  const [custoEmbalagemOutros, setCustoEmbalagemOutros] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
 
@@ -56,7 +60,15 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
       setProdutoId(receitaCarregada.produtoId);
       setNome(receitaCarregada.nome);
       setRendimento(receitaCarregada.rendimento);
-      setItens(receitaCarregada.itens.map((i) => ({ materiaPrimaId: i.materiaPrimaId, quantidade: i.quantidade })));
+      setItens(
+        receitaCarregada.itens.map((i) => ({
+          materiaPrimaId: i.materiaPrimaId,
+          quantidade: i.quantidade,
+          unidadeMedida: i.unidadeMedida,
+        }))
+      );
+      setCustoMaoDeObra(receitaCarregada.custoMaoDeObra);
+      setCustoEmbalagemOutros(receitaCarregada.custoEmbalagemOutros);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar ficha técnica");
     } finally {
@@ -79,15 +91,19 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
     setErrosCampos({});
 
     const itensValidos: ReceitaItemRequest[] = itens
-      .filter((l): l is { materiaPrimaId: number; quantidade: number } => l.materiaPrimaId !== "" && l.quantidade > 0)
-      .map((l) => ({ materiaPrimaId: l.materiaPrimaId, quantidade: l.quantidade }));
+      .filter((l): l is LinhaItem & { materiaPrimaId: number } => l.materiaPrimaId !== "" && l.quantidade > 0)
+      .map((l) => ({
+        materiaPrimaId: l.materiaPrimaId,
+        quantidade: l.quantidade,
+        unidadeMedida: l.unidadeMedida.trim() === "" ? undefined : l.unidadeMedida.trim(),
+      }));
 
     if (produtoId === "" || itensValidos.length === 0) {
       setErro("Selecione o produto e mantenha ao menos um item válido.");
       return;
     }
 
-    const request: ReceitaRequest = { produtoId, nome, rendimento, itens: itensValidos };
+    const request: ReceitaRequest = { produtoId, nome, rendimento, itens: itensValidos, custoMaoDeObra, custoEmbalagemOutros };
 
     setSalvando(true);
     try {
@@ -140,10 +156,14 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
       {erro && <ErrorBanner mensagem={erro} />}
 
       {receita && (
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Card>
-            <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Custo de produção</p>
-            <p className="mt-1.5 text-2xl font-extrabold tabular-figures text-ink">{formatarMoeda(receita.custoProducao)}</p>
+            <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Custo total</p>
+            <p className="mt-1.5 text-2xl font-extrabold tabular-figures text-ink">{formatarMoeda(receita.custoTotal)}</p>
+            <p className="mt-1 text-sm text-ink-secondary">
+              Insumo {formatarMoeda(receita.custoProducao)} + mão de obra {formatarMoeda(receita.custoMaoDeObra)} + outros{" "}
+              {formatarMoeda(receita.custoEmbalagemOutros)}
+            </p>
           </Card>
           <Card>
             <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Preço de venda</p>
@@ -169,11 +189,40 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
       )}
 
       {receita && (
+        <Card className="mb-8 overflow-x-auto p-0">
+          <table className="w-full text-base">
+            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+              <tr>
+                <th className="px-5 py-3">Matéria-prima</th>
+                <th className="px-5 py-3">Quantidade</th>
+                <th className="px-5 py-3">Custo unitário</th>
+                <th className="px-5 py-3">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receita.itens.map((item) => (
+                <tr key={item.id} className="border-b border-hairline last:border-0">
+                  <td className="px-5 py-3 font-medium text-ink">{item.materiaPrimaNome}</td>
+                  <td className="px-5 py-3 text-ink-secondary">
+                    {item.quantidade} {item.unidadeMedida}
+                  </td>
+                  <td className="px-5 py-3 text-ink-secondary">
+                    {formatarMoeda(item.custoUnitarioMateriaPrima)}/{item.unidadeMedidaMateriaPrima}
+                  </td>
+                  <td className="px-5 py-3 font-medium tabular-figures text-ink">{formatarMoeda(item.subtotalCusto)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {receita && (
         <Card className="mb-8">
           <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Preço sugerido</p>
           <p className="mt-1.5 text-2xl font-extrabold tabular-figures text-ink">{formatarMoeda(receita.precoSugerido)}</p>
           <p className="mt-1 text-sm text-ink-secondary">
-            Custo de produção × margem desejada de {receita.margemDesejadaPercentual}%
+            Custo total × margem desejada de {receita.margemDesejadaPercentual}%
             {" "}
             <Link href={`/estoque/produtos/${receita.produtoId}`} className="text-accent hover:underline">
               (ajustar margem)
@@ -227,48 +276,96 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
           <div>
             <Label>Matérias-primas *</Label>
             <div className="grid gap-2">
-              {itens.map((linha, index) => (
-                <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_140px_auto] sm:items-end">
-                  <div className="col-span-2 sm:col-span-1">
-                    <Select
-                      value={linha.materiaPrimaId}
-                      onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
+              {itens.map((linha, index) => {
+                const materiaPrima = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId);
+                return (
+                  <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_90px_auto] sm:items-end">
+                    <div className="col-span-2 sm:col-span-1">
+                      <Select
+                        value={linha.materiaPrimaId}
+                        onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
+                      >
+                        <option value="">Selecione...</option>
+                        {materiasPrimas.map((mp) => (
+                          <option key={mp.id} value={mp.id}>
+                            {mp.nome} ({mp.unidadeMedida})
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={linha.quantidade}
+                      onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
+                    />
+                    <Input
+                      list="unidades-medida-sugeridas"
+                      placeholder={materiaPrima?.unidadeMedida ?? "unidade"}
+                      value={linha.unidadeMedida}
+                      onChange={(e) => atualizarLinha(index, { unidadeMedida: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="col-span-2 sm:col-span-1"
+                      onClick={() => setItens((atual) => atual.filter((_, i) => i !== index))}
+                      disabled={itens.length === 1}
                     >
-                      <option value="">Selecione...</option>
-                      {materiasPrimas.map((mp) => (
-                        <option key={mp.id} value={mp.id}>
-                          {mp.nome} ({mp.unidadeMedida})
-                        </option>
-                      ))}
-                    </Select>
+                      Remover
+                    </Button>
                   </div>
-                  <Input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={linha.quantidade}
-                    onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="col-span-2 sm:col-span-1"
-                    onClick={() => setItens((atual) => atual.filter((_, i) => i !== index))}
-                    disabled={itens.length === 1}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            <p className="mt-1 text-sm text-ink-secondary">
+              Deixe a unidade em branco pra usar a mesma da matéria-prima. Só preencha se quiser escrever a
+              quantidade numa unidade diferente (ex: g numa matéria-prima cadastrada em kg) — o sistema converte
+              sozinho.
+            </p>
+            <datalist id="unidades-medida-sugeridas">
+              <option value="g" />
+              <option value="kg" />
+              <option value="ml" />
+              <option value="l" />
+              <option value="cm" />
+              <option value="m" />
+              <option value="un" />
+            </datalist>
             <Button
               type="button"
               variant="secondary"
               className="mt-2"
-              onClick={() => setItens((a) => [...a, { materiaPrimaId: "", quantidade: 0 }])}
+              onClick={() => setItens((a) => [...a, { materiaPrimaId: "", quantidade: 0, unidadeMedida: "" }])}
             >
               + Adicionar item
             </Button>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="custoMaoDeObra">Custo de mão de obra (por unidade)</Label>
+              <Input
+                id="custoMaoDeObra"
+                type="number"
+                step="0.01"
+                min="0"
+                value={custoMaoDeObra}
+                onChange={(e) => setCustoMaoDeObra(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="custoEmbalagemOutros">Embalagem/outros custos (por unidade)</Label>
+              <Input
+                id="custoEmbalagemOutros"
+                type="number"
+                step="0.01"
+                min="0"
+                value={custoEmbalagemOutros}
+                onChange={(e) => setCustoEmbalagemOutros(Number(e.target.value))}
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between border-t border-hairline pt-4">
