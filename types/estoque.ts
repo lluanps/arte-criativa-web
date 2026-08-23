@@ -35,11 +35,12 @@ export interface ProdutoRequest {
 export interface MateriaPrimaResponse {
   id: number;
   nome: string;
+  categoriaId: number | null;
+  categoriaNome: string | null;
   unidadeMedida: string;
   custoUnitario: number;
   estoqueAtual: number;
   estoqueMinimo: number;
-  volumeMl: number | null;
   fornecedor: string | null;
   criadoEm: string;
   atualizadoEm: string;
@@ -50,11 +51,11 @@ export interface MateriaPrimaResponse {
  * anotar um nome sem saber o preço ainda, usar MateriaPrimaDesejadaRequest em vez deste. */
 export interface MateriaPrimaRequest {
   nome: string;
+  categoriaId?: number | null;
   unidadeMedida: string;
   quantidadeComprada: number;
   valorPago: number;
   estoqueMinimo: number;
-  volumeMl?: number | null;
   fornecedor?: string | null;
 }
 
@@ -62,11 +63,24 @@ export interface MateriaPrimaRequest {
  * entram aqui de propósito: só mudam via "Registrar movimentação" (valor pago). */
 export interface MateriaPrimaAtualizacaoRequest {
   nome: string;
+  categoriaId?: number | null;
   unidadeMedida: string;
   estoqueMinimo: number;
-  volumeMl?: number | null;
   fornecedor?: string | null;
 }
+
+/** Unidades reconhecidas pelo backend (UnidadeMedida.deTexto) pra conversão automática
+ * entre a unidade da matéria-prima e a de um item de receita — select fixo (em vez de
+ * texto livre) pra não deixar cadastrar uma grafia que o backend não reconhece. */
+export const UNIDADES_MEDIDA = [
+  { value: "g", label: "g (grama)" },
+  { value: "kg", label: "kg (quilograma)" },
+  { value: "ml", label: "ml (mililitro)" },
+  { value: "l", label: "l (litro)" },
+  { value: "cm", label: "cm (centímetro)" },
+  { value: "m", label: "m (metro)" },
+  { value: "un", label: "un (unidade)" },
+] as const;
 
 /** "Lista de compras": matéria-prima que ainda não tem preço definido — só o nome, sem
  * nenhuma relação com MateriaPrimaResponse até a compra ser registrada de verdade. */
