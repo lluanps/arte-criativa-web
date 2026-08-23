@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import { dataLocalISO, formatarData, formatarMoeda } from "@/lib/format";
-import { ContaResponse, LancamentoFinanceiroResponse, TipoConta, TipoLancamento } from "@/types/financeiro";
+import { dataLocalISO, formatarData, formatarDataHora, formatarMoeda } from "@/lib/format";
+import { ContaResponse, ItemMateriaPrimaCompra, LancamentoFinanceiroResponse, TipoConta, TipoLancamento } from "@/types/financeiro";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, StatCard } from "@/components/ui";
 
 function primeiroDiaDoMes(): string {
@@ -34,6 +34,12 @@ interface GrupoParcelamento {
   valorTotal: number;
   valorRestante: number;
   proximaPendente: ContaResponse | null;
+}
+
+/** "Cera de abelha × 5, Pavio × 20" — resumo dos itens de uma compra de matéria-prima
+ * vinculada a um lançamento de origem CONTA. */
+function formatarItensCompra(itens: ItemMateriaPrimaCompra[]): string {
+  return itens.map((item) => `${item.materiaPrimaNome ?? "?"} × ${item.quantidade}`).join(", ");
 }
 
 function agruparPorCategoria(lancamentos: LancamentoFinanceiroResponse[]): LinhaCategoria[] {
@@ -375,6 +381,7 @@ export default function RelatorioFinanceiroPage() {
   );
   const parcelamentos = useMemo(() => agruparParcelamentos(contas), [contas]);
   const contasFuturas = useMemo(() => futuras(contas), [contas]);
+  const contasPorId = useMemo(() => new Map(contas.map((c) => [c.id, c])), [contas]);
 
   const totalFuturoPagar = contasFuturas.filter((c) => c.tipo === "PAGAR").reduce((s, c) => s + c.valor, 0);
   const totalFuturoReceber = contasFuturas.filter((c) => c.tipo === "RECEBER").reduce((s, c) => s + c.valor, 0);
@@ -603,17 +610,28 @@ export default function RelatorioFinanceiroPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {lancamentosOrdenados.map((l) => (
-                      <tr key={l.id} className="border-b border-hairline last:border-0">
-                        <td className="px-5 py-4 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
-                        <td className="px-5 py-4">
-                          <Badge tone={l.tipo === "RECEITA" ? "success" : "danger"}>{l.tipo === "RECEITA" ? "Receita" : "Despesa"}</Badge>
-                        </td>
-                        <td className="px-5 py-4 text-ink-secondary">{l.categoria}</td>
-                        <td className="px-5 py-4 font-medium text-ink">{l.descricao ?? "—"}</td>
-                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(l.valor)}</td>
-                      </tr>
-                    ))}
+                    {lancamentosOrdenados.map((l) => {
+                      const conta = l.origem === "CONTA" && l.origemId !== null ? contasPorId.get(l.origemId) : undefined;
+                      const itensCompra = conta?.itensMateriaPrima;
+                      return (
+                        <tr key={l.id} className="border-b border-hairline last:border-0">
+                          <td className="px-5 py-4 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
+                          <td className="px-5 py-4">
+                            <Badge tone={l.tipo === "RECEITA" ? "success" : "danger"}>{l.tipo === "RECEITA" ? "Receita" : "Despesa"}</Badge>
+                          </td>
+                          <td className="px-5 py-4 text-ink-secondary">{l.categoria}</td>
+                          <td className="px-5 py-4 font-medium text-ink">
+                            {l.descricao ?? "—"}
+                            {itensCompra && itensCompra.length > 0 && (
+                              <p className="mt-1 text-sm font-normal text-ink-secondary">
+                                🧵 {formatarItensCompra(itensCompra)} · registrada em {formatarDataHora(conta!.criadoEm)}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(l.valor)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </Card>
