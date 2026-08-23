@@ -2,6 +2,8 @@
 
 Backlog de ideias levantadas em 2026-08-23, pra não perder o fio enquanto implementamos aos poucos. Marcar `[x]` conforme for entrando; `🔧` = em andamento agora.
 
+**Divisão de trabalho (2 terminais em paralelo):** um terminal na trilha Estoque/Produção (fez Dashboard na Home + filtro de categoria na Ficha técnica), outro na trilha Financeiro/Cadastros. Pausado no fim do dia de 2026-08-23 — nada pela metade nos repos (API e Web limpos, tudo commitado/pushado). Próximo item da trilha Financeiro/Cadastros, ainda não iniciado: **Alerta de conta atrasada** — ideia é espelhar `AlertaEstoqueBaixo`/`lib/estoque.ts` só que pra `ContaResponse.status === "ATRASADO"` (já vem pronto do backend via `getStatusEfetivo()`, não precisa mudar API), com um `lib/financeiro.ts` novo (`buscarContasAtrasadas`) e os dois alertas empilhados no mesmo canto (`AppShell.tsx`) em vez de cada um com seu próprio posicionamento fixo, pra não repetir o bug do alerta cobrindo filtro que corrigimos hoje.
+
 ## Rápidas de fazer
 
 - [x] **Filtro de categoria no seletor de matéria-prima da Ficha técnica** — hoje é um `<select>` simples com todas as matérias-primas. Reaproveita o cadastro de categoria que já existe. Só frontend, sem depender da API.
