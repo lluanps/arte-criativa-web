@@ -46,6 +46,32 @@ export interface MateriaPrimaResponse {
   atualizadoEm: string;
 }
 
+export interface GrupoMateriaPrimaPorCategoria {
+  categoriaNome: string;
+  itens: MateriaPrimaResponse[];
+}
+
+/** Agrupa matérias-primas por categoria (nome) — usado pra montar `<optgroup>` no
+ * seletor de matéria-prima da Ficha técnica, que pode listar dezenas de itens. Sem
+ * categoria vai pro grupo "Sem categoria", sempre por último; os demais em ordem
+ * alfabética. */
+export function agruparMateriaPrimaPorCategoria(materiasPrimas: MateriaPrimaResponse[]): GrupoMateriaPrimaPorCategoria[] {
+  const mapa = new Map<string, MateriaPrimaResponse[]>();
+  for (const mp of materiasPrimas) {
+    const chave = mp.categoriaNome ?? "Sem categoria";
+    const lista = mapa.get(chave) ?? [];
+    lista.push(mp);
+    mapa.set(chave, lista);
+  }
+  return [...mapa.entries()]
+    .map(([categoriaNome, itens]) => ({ categoriaNome, itens }))
+    .sort((a, b) => {
+      if (a.categoriaNome === "Sem categoria") return 1;
+      if (b.categoriaNome === "Sem categoria") return -1;
+      return a.categoriaNome.localeCompare(b.categoriaNome);
+    });
+}
+
 /** Criar uma matéria-prima é sempre "registrar a primeira compra" — custo unitário não
  * é digitável direto, vem de valorPago ÷ quantidadeComprada (o backend calcula). Pra só
  * anotar um nome sem saber o preço ainda, usar MateriaPrimaDesejadaRequest em vez deste. */

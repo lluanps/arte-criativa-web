@@ -1,11 +1,11 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarData, formatarMoeda } from "@/lib/format";
-import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -44,6 +44,8 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
   const [custoEmbalagemOutros, setCustoEmbalagemOutros] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+
+  const materiasPrimasAgrupadas = useMemo(() => agruparMateriaPrimaPorCategoria(materiasPrimas), [materiasPrimas]);
 
   async function carregar() {
     setCarregando(true);
@@ -286,10 +288,14 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                         onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
                       >
                         <option value="">Selecione...</option>
-                        {materiasPrimas.map((mp) => (
-                          <option key={mp.id} value={mp.id}>
-                            {mp.nome} ({mp.unidadeMedida})
-                          </option>
+                        {materiasPrimasAgrupadas.map((grupo) => (
+                          <optgroup key={grupo.categoriaNome} label={grupo.categoriaNome}>
+                            {grupo.itens.map((mp) => (
+                              <option key={mp.id} value={mp.id}>
+                                {mp.nome} ({mp.unidadeMedida})
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </Select>
                     </div>
