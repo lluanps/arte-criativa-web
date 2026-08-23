@@ -170,3 +170,55 @@ export function EmptyState({ mensagem }: { mensagem: string }) {
     </div>
   );
 }
+
+/** Navegação de página (anterior/próxima + "X–Y de Z") pra qualquer listagem paginada
+ * pela API — página é 0-indexada (mesma convenção do backend/Spring). */
+export function Paginacao({
+  pagina,
+  totalPaginas,
+  totalElementos,
+  tamanho,
+  onMudarPagina,
+}: {
+  pagina: number;
+  totalPaginas: number;
+  totalElementos: number;
+  tamanho: number;
+  onMudarPagina: (pagina: number) => void;
+}) {
+  if (totalElementos === 0) return null;
+
+  const inicio = pagina * tamanho + 1;
+  const fim = Math.min((pagina + 1) * tamanho, totalElementos);
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-ink-secondary">
+        {inicio}–{fim} de {totalElementos}
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          className="px-3 py-1.5 text-sm"
+          onClick={() => onMudarPagina(pagina - 1)}
+          disabled={pagina <= 0}
+        >
+          Anterior
+        </Button>
+        <span className="text-sm text-ink-secondary">
+          Página {pagina + 1} de {totalPaginas}
+        </span>
+        <Button
+          type="button"
+          variant="secondary"
+          className="px-3 py-1.5 text-sm"
+          onClick={() => onMudarPagina(pagina + 1)}
+          disabled={pagina + 1 >= totalPaginas}
+        >
+          Próxima
+        </Button>
+      </div>
+    </div>
+  );
+}

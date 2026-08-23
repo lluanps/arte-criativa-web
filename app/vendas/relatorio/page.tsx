@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import { dataLocalISO, formatarMoeda, parseDataLocal } from "@/lib/format";
+import { dataLocalISO, formatarData, formatarMoeda, parseDataLocal } from "@/lib/format";
 import { VendaResponse } from "@/types/vendas";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
 
@@ -34,12 +34,48 @@ function exportarCsv(linhas: LinhaRelatorio[], inicio: string, fim: string) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Gera e baixa um PDF do mesmo relatório — também tudo no navegador, sem API. jsPDF e
+ * jspdf-autotable só são carregados quando o botão é clicado (import dinâmico), pra não
+ * pesar no bundle de nenhuma outra tela do app.
+ */
+async function exportarPdf(linhas: LinhaRelatorio[], inicio: string, fim: string, totalGeral: number) {
+  const [{ default: jsPDF }, { autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text("Arte Criativa", 14, 17);
+  doc.setFontSize(12);
+  doc.text("Produtos mais vendidos", 14, 25);
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  doc.text(`Período: ${formatarData(inicio)} até ${formatarData(fim)}`, 14, 31);
+
+  autoTable(doc, {
+    startY: 37,
+    head: [["#", "Produto", "Qtd. vendida", "Total vendido", "% do período"]],
+    body: linhas.map((l, i) => [
+      String(i + 1),
+      l.produtoNome,
+      String(l.quantidade),
+      formatarMoeda(l.totalVendido),
+      totalGeral > 0 ? `${((l.totalVendido / totalGeral) * 100).toFixed(1)}%` : "—",
+    ]),
+    foot: [["", "Total", "", formatarMoeda(totalGeral), ""]],
+    headStyles: { fillColor: [90, 74, 58] },
+    footStyles: { fillColor: [237, 231, 222], textColor: [40, 35, 30], fontStyle: "bold" },
+  });
+
+  doc.save(`produtos-mais-vendidos_${inicio}_a_${fim}.pdf`);
+}
+
 export default function RelatorioVendasPage() {
   const [inicio, setInicio] = useState(primeiroDiaDoMes());
   const [fim, setFim] = useState(dataLocalISO());
   const [vendas, setVendas] = useState<VendaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   async function carregar() {
     setCarregando(true);
@@ -96,9 +132,25 @@ export default function RelatorioVendasPage() {
         titulo="Produtos mais vendidos"
         descricao="Ranking por valor vendido no período — útil pra decidir o que produzir mais."
         acao={
-          <Button variant="secondary" onClick={() => exportarCsv(linhas, inicio, fim)} disabled={linhas.length === 0}>
-            Exportar CSV
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={() => exportarCsv(linhas, inicio, fim)} disabled={linhas.length === 0}>
+              Exportar CSV
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={linhas.length === 0 || gerandoPdf}
+              onClick={async () => {
+                setGerandoPdf(true);
+                try {
+                  await exportarPdf(linhas, inicio, fim, totalGeral);
+                } finally {
+                  setGerandoPdf(false);
+                }
+              }}
+            >
+              {gerandoPdf ? "Gerando..." : "Exportar PDF"}
+            </Button>
+          </div>
         }
       />
 
