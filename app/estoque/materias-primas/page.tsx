@@ -5,7 +5,11 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
 import { useDebounced } from "@/lib/useDebounced";
-import { MateriaPrimaRequest, MateriaPrimaResponse } from "@/types/estoque";
+import {
+  MateriaPrimaDesejadaResponse,
+  MateriaPrimaRequest,
+  MateriaPrimaResponse,
+} from "@/types/estoque";
 import { PaginaResponse } from "@/types/common";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Paginacao } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -16,10 +20,23 @@ const TAMANHO_PAGINA = 20;
 
 type CampoOrdenacao = "nome" | "unidadeMedida" | "custoUnitario" | "estoqueAtual";
 
-const MATERIA_PRIMA_VAZIA: MateriaPrimaRequest = {
+/** Estado do formulário — cobre tanto "registrar a compra de verdade" (todos os
+ * campos) quanto "só anotar o nome" (só nome é lido nesse caso, ver `soAnotarNome`). */
+interface FormState {
+  nome: string;
+  unidadeMedida: string;
+  quantidadeComprada: number;
+  valorPago: number;
+  estoqueMinimo: number;
+  volumeMl: number | null;
+  fornecedor: string;
+}
+
+const FORM_VAZIO: FormState = {
   nome: "",
   unidadeMedida: "",
-  custoUnitario: 0,
+  quantidadeComprada: 0,
+  valorPago: 0,
   estoqueMinimo: 0,
   volumeMl: null,
   fornecedor: "",
@@ -32,9 +49,12 @@ export default function MateriasPrimasPage() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
-  const [form, setForm] = useState<MateriaPrimaRequest>(MATERIA_PRIMA_VAZIA);
+  const [soAnotarNome, setSoAnotarNome] = useState(false);
+  const [form, setForm] = useState<FormState>(FORM_VAZIO);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState(false);
+
+  const [desejadas, setDesejadas] = useState<MateriaPrimaDesejadaResponse[]>([]);
 
   const [busca, setBusca] = useState("");
   const buscaDebounced = useDebounced(busca);
@@ -43,6 +63,14 @@ export default function MateriasPrimasPage() {
 
   const materiasPrimas = resultado?.conteudo ?? [];
   const filtroAtivo = buscaDebounced.trim() !== "" || apenasEstoqueBaixo;
+
+  async function carregarDesejadas() {
+    try {
+      setDesejadas(await api.get<MateriaPrimaDesejadaResponse[]>("/materias-primas/desejadas"));
+    } catch {
+      // Lista de compras é complementar — se falhar, a listagem principal já mostra erro.
+    }
+  }
 
   /** Busca uma página específica com os filtros/ordenação atuais — usada tanto pelo
    * efeito que refaz a busca quando algum filtro muda (sempre a partir da página 0)
@@ -77,22 +105,72 @@ export default function MateriasPrimasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscaDebounced, apenasEstoqueBaixo, ordenacao]);
 
+  useEffect(() => {
+    carregarDesejadas();
+  }, []);
+
+  function resetarForm() {
+    setForm(FORM_VAZIO);
+    setSoAnotarNome(false);
+    setMostrarForm(false);
+    setErrosCampos({});
+  }
+
+  /** Pré-preenche o nome a partir de um item da lista de compras e já abre o form de
+   * compra de verdade — não marca soAnotarNome (a ideia é completar, não duplicar). */
+  function completarCompra(desejada: MateriaPrimaDesejadaResponse) {
+    setForm({ ...FORM_VAZIO, nome: desejada.nome });
+    setSoAnotarNome(false);
+    setMostrarForm(true);
+    setErrosCampos({});
+  }
+
+  async function excluirDesejada(desejada: MateriaPrimaDesejadaResponse) {
+    try {
+      await api.del(`/materias-primas/desejadas/${desejada.id}`);
+      await carregarDesejadas();
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao excluir item da lista de compras");
+    }
+  }
+
   async function criar(e: React.FormEvent) {
     e.preventDefault();
     setSalvando(true);
     setErro(null);
     setErrosCampos({});
     try {
-      await api.post("/materias-primas", form);
-      setForm(MATERIA_PRIMA_VAZIA);
-      setMostrarForm(false);
-      await buscar(0);
+      if (soAnotarNome) {
+        await api.post("/materias-primas/desejadas", { nome: form.nome });
+        await carregarDesejadas();
+      } else {
+        const request: MateriaPrimaRequest = {
+          nome: form.nome,
+          unidadeMedida: form.unidadeMedida,
+          quantidadeComprada: form.quantidadeComprada,
+          valorPago: form.valorPago,
+          estoqueMinimo: form.estoqueMinimo,
+          volumeMl: form.volumeMl,
+          fornecedor: form.fornecedor,
+        };
+        await api.post("/materias-primas", request);
+        // Se o nome bate com algo da lista de compras, a compra "completou" aquele
+        // item — remove da lista pra não ficar duplicado.
+        const desejadaCorrespondente = desejadas.find(
+          (d) => d.nome.trim().toLowerCase() === form.nome.trim().toLowerCase()
+        );
+        if (desejadaCorrespondente) {
+          await api.del(`/materias-primas/desejadas/${desejadaCorrespondente.id}`);
+        }
+        await Promise.all([buscar(0), carregarDesejadas()]);
+      }
+      resetarForm();
     } catch (e) {
       if (e instanceof ApiError) {
         setErro(e.message);
         setErrosCampos(e.campos ?? {});
       } else {
-        setErro("Erro ao criar matéria-prima");
+        setErro(soAnotarNome ? "Erro ao anotar matéria-prima" : "Erro ao criar matéria-prima");
       }
     } finally {
       setSalvando(false);
@@ -145,13 +223,16 @@ export default function MateriasPrimasPage() {
     );
   }
 
+  const custoUnitarioPreview =
+    form.quantidadeComprada > 0 && form.valorPago > 0 ? form.valorPago / form.quantidadeComprada : null;
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <PageHeader
         titulo="Matérias-primas"
         descricao="Insumos usados na produção dos produtos."
         acao={
-          <Button onClick={() => setMostrarForm((v) => !v)}>
+          <Button onClick={() => (mostrarForm ? resetarForm() : setMostrarForm(true))}>
             {mostrarForm ? "Cancelar" : "Nova matéria-prima"}
           </Button>
         }
@@ -162,69 +243,122 @@ export default function MateriasPrimasPage() {
       {mostrarForm && (
         <Card className="mb-6">
           <form onSubmit={criar} className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="nome">Nome *</Label>
-              <Input id="nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
-              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
-            </div>
-            <div>
-              <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
-              <Input
-                id="unidadeMedida"
-                list="unidades-medida-sugeridas"
-                placeholder="g, kg, ml, l, cm, m, un..."
-                required
-                value={form.unidadeMedida}
-                onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
-              />
-              {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
-              <p className="mt-1 text-sm text-ink-secondary">
-                Usando g, kg, ml, l, cm, m ou un a ficha técnica converte automaticamente se a receita usar uma
-                unidade diferente (ex: comprar em kg e usar em g).
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="custoUnitario">Custo unitário *</Label>
-              <Input
-                id="custoUnitario"
-                type="number"
-                step="0.0001"
-                min="0"
-                required
-                value={form.custoUnitario}
-                onChange={(e) => setForm({ ...form, custoUnitario: Number(e.target.value) })}
-              />
-              {errosCampos.custoUnitario && <p className="mt-1 text-sm text-critical">{errosCampos.custoUnitario}</p>}
-            </div>
-            <div>
-              <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
-              <Input
-                id="estoqueMinimo"
-                type="number"
-                step="0.001"
-                min="0"
-                value={form.estoqueMinimo}
-                onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="volumeMl">Volume (ml)</Label>
-              <Input
-                id="volumeMl"
-                type="number"
-                step="1"
-                min="0"
-                value={form.volumeMl ?? ""}
-                onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
-              />
-            </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="fornecedor">Fornecedor</Label>
-              <Input id="fornecedor" value={form.fornecedor ?? ""} onChange={(e) => setForm({ ...form, fornecedor: e.target.value })} />
+              <label className="flex items-center gap-2 text-base text-ink-secondary">
+                <input
+                  type="checkbox"
+                  checked={soAnotarNome}
+                  onChange={(e) => setSoAnotarNome(e.target.checked)}
+                  className="h-4 w-4 rounded border-hairline"
+                />
+                Só quero anotar o nome (ainda não sei o preço)
+              </label>
             </div>
+
+            <div className={soAnotarNome ? "sm:col-span-2" : undefined}>
+              <Label htmlFor="nome">Nome *</Label>
+              <Input
+                id="nome"
+                list="materias-primas-desejadas"
+                required
+                value={form.nome}
+                onChange={(e) => setForm({ ...form, nome: e.target.value })}
+              />
+              {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
+              {!soAnotarNome && desejadas.length > 0 && (
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Já na sua lista de compras: {desejadas.map((d) => d.nome).join(", ")}
+                </p>
+              )}
+            </div>
+
+            {!soAnotarNome && (
+              <>
+                <div>
+                  <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
+                  <Input
+                    id="unidadeMedida"
+                    list="unidades-medida-sugeridas"
+                    placeholder="g, kg, ml, l, cm, m, un..."
+                    required
+                    value={form.unidadeMedida}
+                    onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
+                  />
+                  {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
+                  <p className="mt-1 text-sm text-ink-secondary">
+                    Usando g, kg, ml, l, cm, m ou un a ficha técnica converte automaticamente se a receita usar uma
+                    unidade diferente (ex: comprar em kg e usar em g).
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="quantidadeComprada">Quantidade comprada *</Label>
+                  <Input
+                    id="quantidadeComprada"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    required
+                    value={form.quantidadeComprada}
+                    onChange={(e) => setForm({ ...form, quantidadeComprada: Number(e.target.value) })}
+                  />
+                  {errosCampos.quantidadeComprada && (
+                    <p className="mt-1 text-sm text-critical">{errosCampos.quantidadeComprada}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="valorPago">Valor pago no total *</Label>
+                  <Input
+                    id="valorPago"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={form.valorPago}
+                    onChange={(e) => setForm({ ...form, valorPago: Number(e.target.value) })}
+                  />
+                  {errosCampos.valorPago && <p className="mt-1 text-sm text-critical">{errosCampos.valorPago}</p>}
+                  <p className="mt-1 text-sm text-ink-secondary">
+                    {custoUnitarioPreview !== null
+                      ? `≈ ${formatarMoeda(custoUnitarioPreview)} por ${form.unidadeMedida || "unidade"} — vira o custo unitário e uma despesa em Financeiro.`
+                      : "O sistema calcula o custo unitário sozinho (valor ÷ quantidade)."}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
+                  <Input
+                    id="estoqueMinimo"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={form.estoqueMinimo}
+                    onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="volumeMl">Volume (ml)</Label>
+                  <Input
+                    id="volumeMl"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={form.volumeMl ?? ""}
+                    onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="fornecedor">Fornecedor</Label>
+                  <Input
+                    id="fornecedor"
+                    value={form.fornecedor}
+                    onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
             <div className="sm:col-span-2">
               <Button type="submit" disabled={salvando}>
-                {salvando ? "Salvando..." : "Salvar matéria-prima"}
+                {salvando ? "Salvando..." : soAnotarNome ? "Adicionar à lista de compras" : "Salvar matéria-prima"}
               </Button>
             </div>
           </form>
@@ -240,6 +374,35 @@ export default function MateriasPrimasPage() {
         <option value="m" />
         <option value="un" />
       </datalist>
+      <datalist id="materias-primas-desejadas">
+        {desejadas.map((d) => (
+          <option key={d.id} value={d.nome} />
+        ))}
+      </datalist>
+
+      {desejadas.length > 0 && (
+        <Card className="mb-6">
+          <h2 className="mb-3 text-lg font-semibold">Lista de compras</h2>
+          <p className="mb-3 text-sm text-ink-secondary">
+            Matérias-primas anotadas sem preço ainda — clique em "Comprei" quando for registrar a compra de verdade.
+          </p>
+          <ul className="grid gap-2">
+            {desejadas.map((d) => (
+              <li key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-hairline px-4 py-2.5">
+                <span className="font-medium text-ink">{d.nome}</span>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => completarCompra(d)} className="text-sm font-semibold text-accent hover:underline">
+                    Comprei
+                  </button>
+                  <button type="button" onClick={() => excluirDesejada(d)} className="text-sm text-critical hover:underline">
+                    Excluir
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {!(!filtroAtivo && resultado?.totalElementos === 0) && (
         <div className="mb-4 flex flex-wrap items-end gap-3">
