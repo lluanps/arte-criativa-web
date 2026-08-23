@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
-import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 
@@ -44,6 +44,8 @@ export default function FichasTecnicasPage() {
   const [custoEmbalagemOutros, setCustoEmbalagemOutros] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
+
+  const materiasPrimasAgrupadas = useMemo(() => agruparMateriaPrimaPorCategoria(materiasPrimas), [materiasPrimas]);
 
   async function carregar() {
     setCarregando(true);
@@ -186,10 +188,14 @@ export default function FichasTecnicasPage() {
                           onChange={(e) => atualizarLinha(index, { materiaPrimaId: Number(e.target.value) })}
                         >
                           <option value="">Selecione...</option>
-                          {materiasPrimas.map((mp) => (
-                            <option key={mp.id} value={mp.id}>
-                              {mp.nome} ({mp.unidadeMedida})
-                            </option>
+                          {materiasPrimasAgrupadas.map((grupo) => (
+                            <optgroup key={grupo.categoriaNome} label={grupo.categoriaNome}>
+                              {grupo.itens.map((mp) => (
+                                <option key={mp.id} value={mp.id}>
+                                  {mp.nome} ({mp.unidadeMedida})
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
                         </Select>
                       </div>
