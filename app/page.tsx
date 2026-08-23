@@ -116,8 +116,26 @@ export default function Home() {
         </div>
       )}
 
+      <div className="mt-10 grid gap-5 sm:grid-cols-2">
+        {modulos.map((modulo) => (
+          <Link
+            key={modulo.nome}
+            href={modulo.href}
+            className="flex items-start gap-4 rounded-2xl border border-hairline bg-surface p-5 shadow-sm transition-colors hover:bg-surface-hover"
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-good-soft text-good">
+              <modulo.Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-ink">{modulo.nome}</h2>
+              <p className="mt-1 text-base text-ink-secondary">{modulo.descricao}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
       {carregando && !dashboardFinanceiro ? (
-        <p className="mt-8 text-base text-ink-secondary">Carregando resumo...</p>
+        <p className="mt-10 text-base text-ink-secondary">Carregando resumo...</p>
       ) : dashboardFinanceiro ? (
         <div className="mt-10">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -200,24 +218,6 @@ export default function Home() {
           </div>
         </div>
       ) : null}
-
-      <div className="mt-10 grid gap-5 sm:grid-cols-2">
-        {modulos.map((modulo) => (
-          <Link
-            key={modulo.nome}
-            href={modulo.href}
-            className="flex items-start gap-4 rounded-2xl border border-hairline bg-surface p-5 shadow-sm transition-colors hover:bg-surface-hover"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-good-soft text-good">
-              <modulo.Icon className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-ink">{modulo.nome}</h2>
-              <p className="mt-1 text-base text-ink-secondary">{modulo.descricao}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
     </main>
   );
 }
