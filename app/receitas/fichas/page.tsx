@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
-import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
+import {
+  agruparMateriaPrimaPorCategoria,
+  arredondarQuantidade,
+  MateriaPrimaResponse,
+  ProdutoResponse,
+  stepQuantidade,
+} from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 
@@ -179,6 +185,7 @@ export default function FichasTecnicasPage() {
               <div className="grid gap-2">
                 {itens.map((linha, index) => {
                   const materiaPrima = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId);
+                  const unidadeEfetiva = linha.unidadeMedida.trim() || materiaPrima?.unidadeMedida;
                   return (
                     <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_90px_auto] sm:items-end">
                       <div className="col-span-2 sm:col-span-1">
@@ -203,10 +210,10 @@ export default function FichasTecnicasPage() {
                         <span className="mb-1 block text-sm text-ink-secondary">Quantidade</span>
                         <Input
                           type="number"
-                          step="0.001"
+                          step={stepQuantidade(unidadeEfetiva)}
                           min="0"
                           value={linha.quantidade}
-                          onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
+                          onChange={(e) => atualizarLinha(index, { quantidade: arredondarQuantidade(Number(e.target.value), unidadeEfetiva) })}
                         />
                       </div>
                       <div>

@@ -108,6 +108,24 @@ export const UNIDADES_MEDIDA = [
   { value: "un", label: "un (unidade)" },
 ] as const;
 
+/** "un" é contagem — não faz sentido ter casas decimais (2,5 un). As demais
+ * (peso/volume/comprimento) fazem. Usado em todo campo de quantidade atrelado a uma
+ * unidade de medida, pra restringir o `step` do input e arredondar o valor digitado. */
+export function quantidadeEhInteira(unidadeMedida: string | null | undefined): boolean {
+  return unidadeMedida === "un";
+}
+
+export function stepQuantidade(unidadeMedida: string | null | undefined): string {
+  return quantidadeEhInteira(unidadeMedida) ? "1" : "0.001";
+}
+
+/** Arredonda pra inteiro quando a unidade é "un" — usado no onChange do campo de
+ * quantidade, além do `step`, porque o `step` sozinho não impede digitar "2,5" na
+ * maioria dos browsers. */
+export function arredondarQuantidade(quantidade: number, unidadeMedida: string | null | undefined): number {
+  return quantidadeEhInteira(unidadeMedida) ? Math.round(quantidade) : quantidade;
+}
+
 /** "Lista de compras": matéria-prima que ainda não tem preço definido — só o nome, sem
  * nenhuma relação com MateriaPrimaResponse até a compra ser registrada de verdade. */
 export interface MateriaPrimaDesejadaResponse {

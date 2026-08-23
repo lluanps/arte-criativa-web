@@ -12,7 +12,7 @@ import {
   StatusConta,
   TipoConta,
 } from "@/types/financeiro";
-import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse } from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, arredondarQuantidade, MateriaPrimaResponse, stepQuantidade } from "@/types/estoque";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 
@@ -369,8 +369,14 @@ export default function ContasPage() {
             {editandoId === null && tipo === "PAGAR" && compraMateriaPrima && (
               <div className="sm:col-span-2">
                 <Label>Itens da compra *</Label>
+                <p className="mb-2 text-sm text-ink-secondary">
+                  "Valor" de cada item é o total pago por ele, não o preço unitário (mesma ideia do "Valor pago" do
+                  cadastro de matéria-prima).
+                </p>
                 <div className="grid gap-2">
-                  {itensCompra.map((linha, index) => (
+                  {itensCompra.map((linha, index) => {
+                    const unidadeSelecionada = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId)?.unidadeMedida;
+                    return (
                     <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_120px_auto] sm:items-end">
                       <div className="col-span-2 sm:col-span-1">
                         {index === 0 && <Label className="text-sm">Matéria-prima</Label>}
@@ -394,11 +400,13 @@ export default function ContasPage() {
                         {index === 0 && <Label className="text-sm">Quantidade</Label>}
                         <Input
                           type="number"
-                          step="0.001"
+                          step={stepQuantidade(unidadeSelecionada)}
                           min="0"
                           placeholder="0"
                           value={linha.quantidade}
-                          onChange={(e) => atualizarLinhaCompra(index, { quantidade: Number(e.target.value) })}
+                          onChange={(e) =>
+                            atualizarLinhaCompra(index, { quantidade: arredondarQuantidade(Number(e.target.value), unidadeSelecionada) })
+                          }
                         />
                       </div>
                       <div>
@@ -424,7 +432,8 @@ export default function ContasPage() {
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <Button
                   type="button"

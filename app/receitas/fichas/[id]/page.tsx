@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarData, formatarMoeda } from "@/lib/format";
-import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
+import {
+  agruparMateriaPrimaPorCategoria,
+  arredondarQuantidade,
+  MateriaPrimaResponse,
+  ProdutoResponse,
+  stepQuantidade,
+} from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -280,6 +286,7 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
             <div className="grid gap-2">
               {itens.map((linha, index) => {
                 const materiaPrima = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId);
+                const unidadeEfetiva = linha.unidadeMedida.trim() || materiaPrima?.unidadeMedida;
                 return (
                   <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_90px_auto] sm:items-end">
                     <div className="col-span-2 sm:col-span-1">
@@ -301,10 +308,10 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                     </div>
                     <Input
                       type="number"
-                      step="0.001"
+                      step={stepQuantidade(unidadeEfetiva)}
                       min="0"
                       value={linha.quantidade}
-                      onChange={(e) => atualizarLinha(index, { quantidade: Number(e.target.value) })}
+                      onChange={(e) => atualizarLinha(index, { quantidade: arredondarQuantidade(Number(e.target.value), unidadeEfetiva) })}
                     />
                     <Input
                       list="unidades-medida-sugeridas"

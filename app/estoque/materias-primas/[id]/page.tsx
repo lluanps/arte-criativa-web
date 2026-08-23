@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import {
+  arredondarQuantidade,
   MateriaPrimaAtualizacaoRequest,
   MateriaPrimaResponse,
   MotivoMovimentacaoMateriaPrima,
   MovimentacaoMateriaPrimaRequest,
   MovimentacaoResponse,
+  stepQuantidade,
   TipoMovimentacao,
   UNIDADES_MEDIDA,
 } from "@/types/estoque";
@@ -220,10 +222,10 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="estoqueMinimo"
                 type="number"
-                step="0.001"
+                step={stepQuantidade(form.unidadeMedida)}
                 min="0"
                 value={form.estoqueMinimo}
-                onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, estoqueMinimo: arredondarQuantidade(Number(e.target.value), form.unidadeMedida) })}
               />
             </div>
             <div className="sm:col-span-2">
@@ -280,11 +282,11 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="quantidade"
                 type="number"
-                step="0.001"
+                step={stepQuantidade(materiaPrima.unidadeMedida)}
                 min="0"
                 required
                 value={movForm.quantidade}
-                onChange={(e) => setMovForm({ ...movForm, quantidade: Number(e.target.value) })}
+                onChange={(e) => setMovForm({ ...movForm, quantidade: arredondarQuantidade(Number(e.target.value), materiaPrima.unidadeMedida) })}
               />
             </div>
             {movForm.tipo === "ENTRADA" && (
