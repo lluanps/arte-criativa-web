@@ -116,7 +116,7 @@ export default function LancamentosPage() {
       </Link>
       <PageHeader
         titulo="Lançamentos"
-        descricao="Receitas e despesas. Os gerados automaticamente (ex: por uma venda) não podem ser editados aqui."
+        descricao="Receitas e despesas. Gerados automaticamente por venda, compra de matéria-prima (com valor pago informado) e conta marcada como paga — esses não podem ser editados aqui, só na tela de origem."
         acao={
           <Button onClick={() => (mostrarForm ? resetarForm() : setMostrarForm(true))}>
             {mostrarForm ? "Cancelar" : "Novo lançamento"}

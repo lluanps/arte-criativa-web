@@ -45,13 +45,39 @@ export interface MateriaPrimaResponse {
   atualizadoEm: string;
 }
 
+/** Criar uma matéria-prima é sempre "registrar a primeira compra" — custo unitário não
+ * é digitável direto, vem de valorPago ÷ quantidadeComprada (o backend calcula). Pra só
+ * anotar um nome sem saber o preço ainda, usar MateriaPrimaDesejadaRequest em vez deste. */
 export interface MateriaPrimaRequest {
   nome: string;
   unidadeMedida: string;
-  custoUnitario: number;
+  quantidadeComprada: number;
+  valorPago: number;
   estoqueMinimo: number;
   volumeMl?: number | null;
   fornecedor?: string | null;
+}
+
+/** Editar uma matéria-prima já cadastrada — só metadados. Custo unitário e estoque não
+ * entram aqui de propósito: só mudam via "Registrar movimentação" (valor pago). */
+export interface MateriaPrimaAtualizacaoRequest {
+  nome: string;
+  unidadeMedida: string;
+  estoqueMinimo: number;
+  volumeMl?: number | null;
+  fornecedor?: string | null;
+}
+
+/** "Lista de compras": matéria-prima que ainda não tem preço definido — só o nome, sem
+ * nenhuma relação com MateriaPrimaResponse até a compra ser registrada de verdade. */
+export interface MateriaPrimaDesejadaResponse {
+  id: number;
+  nome: string;
+  criadoEm: string;
+}
+
+export interface MateriaPrimaDesejadaRequest {
+  nome: string;
 }
 
 export interface MovimentacaoResponse {

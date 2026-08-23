@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import {
-  MateriaPrimaRequest,
+  MateriaPrimaAtualizacaoRequest,
   MateriaPrimaResponse,
   MotivoMovimentacaoMateriaPrima,
   MovimentacaoMateriaPrimaRequest,
@@ -28,7 +28,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const [form, setForm] = useState<MateriaPrimaRequest | null>(null);
+  const [form, setForm] = useState<MateriaPrimaAtualizacaoRequest | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
@@ -55,7 +55,6 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
       setForm({
         nome: mp.nome,
         unidadeMedida: mp.unidadeMedida,
-        custoUnitario: mp.custoUnitario,
         estoqueMinimo: mp.estoqueMinimo,
         volumeMl: mp.volumeMl,
         fornecedor: mp.fornecedor ?? "",
@@ -195,17 +194,12 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               </datalist>
             </div>
             <div>
-              <Label htmlFor="custoUnitario">Custo unitário *</Label>
-              <Input
-                id="custoUnitario"
-                type="number"
-                step="0.0001"
-                min="0"
-                required
-                value={form.custoUnitario}
-                onChange={(e) => setForm({ ...form, custoUnitario: Number(e.target.value) })}
-              />
-              {errosCampos.custoUnitario && <p className="mt-1 text-sm text-critical">{errosCampos.custoUnitario}</p>}
+              <Label htmlFor="custoUnitario">Custo unitário</Label>
+              <Input id="custoUnitario" value={formatarMoeda(materiaPrima.custoUnitario)} disabled className="opacity-70" />
+              <p className="mt-1 text-sm text-ink-secondary">
+                Só muda via "Registrar movimentação" (Entrada com valor pago), ao lado — assim toda mudança de custo
+                fica rastreada e vira despesa no Financeiro.
+              </p>
             </div>
             <div>
               <Label htmlFor="estoqueMinimo">Estoque mínimo</Label>
@@ -306,8 +300,8 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 />
                 <p className="mt-1 text-sm text-ink-secondary">
                   {movForm.valorPago && movForm.quantidade > 0
-                    ? `≈ ${formatarMoeda(movForm.valorPago / movForm.quantidade)} por ${materiaPrima.unidadeMedida} — vira o novo custo unitário (média ponderada com o estoque atual).`
-                    : "Preenche pra o sistema calcular o custo unitário sozinho (valor ÷ quantidade) em vez de você editar \"Custo unitário\" na mão."}
+                    ? `≈ ${formatarMoeda(movForm.valorPago / movForm.quantidade)} por ${materiaPrima.unidadeMedida} — vira o novo custo unitário (média ponderada com o estoque atual) e uma despesa em Financeiro.`
+                    : "Preenche pra o sistema calcular o custo unitário sozinho (valor ÷ quantidade) em vez de você editar \"Custo unitário\" na mão. Sem preencher aqui, essa entrada NÃO aparece como despesa no Financeiro — só entra no estoque."}
                 </p>
               </div>
             )}
