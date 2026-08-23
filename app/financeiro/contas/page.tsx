@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { dataLocalISO, formatarData, formatarMoeda } from "@/lib/format";
-import { ContaRequest, ContaResponse, StatusConta, TipoConta } from "@/types/financeiro";
+import { ContaParceladaRequest, ContaRequest, ContaResponse, StatusConta, TipoConta } from "@/types/financeiro";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 
@@ -33,6 +33,8 @@ export default function ContasPage() {
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState(0);
   const [vencimento, setVencimento] = useState(dataLocalISO());
+  const [parcelado, setParcelado] = useState(false);
+  const [quantidadeParcelas, setQuantidadeParcelas] = useState(2);
   const [salvando, setSalvando] = useState(false);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
 
@@ -65,6 +67,8 @@ export default function ContasPage() {
     setDescricao("");
     setValor(0);
     setVencimento(dataLocalISO());
+    setParcelado(false);
+    setQuantidadeParcelas(2);
     setMostrarForm(false);
     setEditandoId(null);
     setErrosCampos({});
@@ -76,6 +80,7 @@ export default function ContasPage() {
     setDescricao(conta.descricao);
     setValor(conta.valor);
     setVencimento(conta.vencimento);
+    setParcelado(false);
     setMostrarForm(true);
     setErrosCampos({});
   }
@@ -84,12 +89,22 @@ export default function ContasPage() {
     e.preventDefault();
     setErro(null);
     setErrosCampos({});
-    const request: ContaRequest = { tipo, descricao, valor, vencimento };
     setSalvando(true);
     try {
       if (editandoId !== null) {
+        const request: ContaRequest = { tipo, descricao, valor, vencimento };
         await api.put(`/contas/${editandoId}`, request);
+      } else if (parcelado) {
+        const request: ContaParceladaRequest = {
+          tipo,
+          descricao,
+          valorTotal: valor,
+          quantidadeParcelas,
+          primeiroVencimento: vencimento,
+        };
+        await api.post("/contas/parceladas", request);
       } else {
+        const request: ContaRequest = { tipo, descricao, valor, vencimento };
         await api.post("/contas", request);
       }
       resetarForm();
@@ -167,9 +182,14 @@ export default function ContasPage() {
               <Label htmlFor="descricao">Descrição *</Label>
               <Input id="descricao" required value={descricao} onChange={(e) => setDescricao(e.target.value)} />
               {errosCampos.descricao && <p className="mt-1 text-sm text-critical">{errosCampos.descricao}</p>}
+              {parcelado && (
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Cada parcela recebe automaticamente "(parcela X/{quantidadeParcelas})" no final da descrição.
+                </p>
+              )}
             </div>
             <div>
-              <Label htmlFor="valor">Valor *</Label>
+              <Label htmlFor="valor">{parcelado ? "Valor total *" : "Valor *"}</Label>
               <Input
                 id="valor"
                 type="number"
@@ -180,14 +200,59 @@ export default function ContasPage() {
                 onChange={(e) => setValor(Number(e.target.value))}
               />
               {errosCampos.valor && <p className="mt-1 text-sm text-critical">{errosCampos.valor}</p>}
+              {errosCampos.valorTotal && <p className="mt-1 text-sm text-critical">{errosCampos.valorTotal}</p>}
+              {parcelado && quantidadeParcelas > 0 && valor > 0 && (
+                <p className="mt-1 text-sm text-ink-secondary">
+                  ≈ {formatarMoeda(valor / quantidadeParcelas)} por parcela.
+                </p>
+              )}
             </div>
             <div>
-              <Label htmlFor="vencimento">Vencimento *</Label>
+              <Label htmlFor="vencimento">{parcelado ? "Vencimento da 1ª parcela *" : "Vencimento *"}</Label>
               <Input id="vencimento" type="date" required value={vencimento} onChange={(e) => setVencimento(e.target.value)} />
+              {parcelado && (
+                <p className="mt-1 text-sm text-ink-secondary">As demais vencem no mesmo dia, um mês depois cada.</p>
+              )}
             </div>
+            {editandoId === null && (
+              <div className={parcelado ? undefined : "sm:col-span-2"}>
+                <label className="flex h-[46px] items-center gap-2 text-base text-ink-secondary">
+                  <input
+                    type="checkbox"
+                    checked={parcelado}
+                    onChange={(e) => setParcelado(e.target.checked)}
+                    className="h-4 w-4 rounded border-hairline"
+                  />
+                  Parcelado
+                </label>
+              </div>
+            )}
+            {parcelado && editandoId === null && (
+              <div>
+                <Label htmlFor="quantidadeParcelas">Quantidade de parcelas *</Label>
+                <Input
+                  id="quantidadeParcelas"
+                  type="number"
+                  step="1"
+                  min="2"
+                  required
+                  value={quantidadeParcelas}
+                  onChange={(e) => setQuantidadeParcelas(Number(e.target.value))}
+                />
+                {errosCampos.quantidadeParcelas && (
+                  <p className="mt-1 text-sm text-critical">{errosCampos.quantidadeParcelas}</p>
+                )}
+              </div>
+            )}
             <div className="sm:col-span-2">
               <Button type="submit" disabled={salvando}>
-                {salvando ? "Salvando..." : editandoId !== null ? "Salvar alterações" : "Salvar conta"}
+                {salvando
+                  ? "Salvando..."
+                  : editandoId !== null
+                    ? "Salvar alterações"
+                    : parcelado
+                      ? `Salvar em ${quantidadeParcelas}x`
+                      : "Salvar conta"}
               </Button>
             </div>
           </form>
@@ -230,7 +295,14 @@ export default function ContasPage() {
                 <tr key={c.id} className="border-b border-hairline last:border-0">
                   <td className="px-5 py-4 text-ink-secondary">{formatarData(c.vencimento)}</td>
                   <td className="px-5 py-4 text-ink-secondary">{c.tipo === "PAGAR" ? "A pagar" : "A receber"}</td>
-                  <td className="px-5 py-4 font-medium text-ink">{c.descricao}</td>
+                  <td className="px-5 py-4 font-medium text-ink">
+                    {c.descricao}
+                    {c.totalParcelas !== null && (
+                      <span className="ml-2 rounded-full bg-surface-hover px-2 py-0.5 text-sm font-normal text-ink-secondary">
+                        {c.numeroParcela}/{c.totalParcelas}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(c.valor)}</td>
                   <td className="px-5 py-4">
                     <Badge tone={CORES_STATUS[c.status]}>{LABEL_STATUS[c.status]}</Badge>
