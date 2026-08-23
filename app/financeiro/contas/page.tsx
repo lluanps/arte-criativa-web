@@ -300,6 +300,11 @@ export default function ContasPage() {
                   Vinculada a uma compra de matéria-prima — pra mudar o valor, exclua e crie a conta de novo.
                 </p>
               )}
+              {editandoId === null && tipo === "PAGAR" && compraMateriaPrima && (
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Valor total da conta — a soma dos itens da compra (abaixo) precisa bater com ele.
+                </p>
+              )}
               {parcelado && quantidadeParcelas > 0 && valor > 0 && (
                 <p className="mt-1 text-sm text-ink-secondary">
                   ≈ {formatarMoeda(valor / quantidadeParcelas)} por parcela.
@@ -368,6 +373,7 @@ export default function ContasPage() {
                   {itensCompra.map((linha, index) => (
                     <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_120px_auto] sm:items-end">
                       <div className="col-span-2 sm:col-span-1">
+                        {index === 0 && <Label className="text-sm">Matéria-prima</Label>}
                         <Select
                           value={linha.materiaPrimaId}
                           onChange={(e) => atualizarLinhaCompra(index, { materiaPrimaId: Number(e.target.value) })}
@@ -384,31 +390,39 @@ export default function ContasPage() {
                           ))}
                         </Select>
                       </div>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        placeholder="Quantidade"
-                        value={linha.quantidade}
-                        onChange={(e) => atualizarLinhaCompra(index, { quantidade: Number(e.target.value) })}
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Valor"
-                        value={linha.valor}
-                        onChange={(e) => atualizarLinhaCompra(index, { valor: Number(e.target.value) })}
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="col-span-2 sm:col-span-1"
-                        onClick={() => removerLinhaCompra(index)}
-                        disabled={itensCompra.length === 1}
-                      >
-                        Remover
-                      </Button>
+                      <div>
+                        {index === 0 && <Label className="text-sm">Quantidade</Label>}
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          placeholder="0"
+                          value={linha.quantidade}
+                          onChange={(e) => atualizarLinhaCompra(index, { quantidade: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div>
+                        {index === 0 && <Label className="text-sm">Valor (R$)</Label>}
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00"
+                          value={linha.valor}
+                          onChange={(e) => atualizarLinhaCompra(index, { valor: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="w-full"
+                          onClick={() => removerLinhaCompra(index)}
+                          disabled={itensCompra.length === 1}
+                        >
+                          Remover
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
