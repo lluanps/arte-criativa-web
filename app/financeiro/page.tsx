@@ -58,6 +58,9 @@ export default function FinanceiroDashboardPage() {
             <LinkButton href="/financeiro/contas" variant="secondary">
               Contas
             </LinkButton>
+            <LinkButton href="/financeiro/relatorio" variant="secondary">
+              Relatório
+            </LinkButton>
           </div>
         }
       />
