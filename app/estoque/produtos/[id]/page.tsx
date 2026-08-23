@@ -18,7 +18,8 @@ import { CategoriaResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { GaleriaFotos } from "@/components/GaleriaFotos";
-import { IconImage, IconPalette, IconSparkles } from "@/components/Icon";
+import { EtiquetaProduto } from "@/components/EtiquetaProduto";
+import { IconImage, IconPalette, IconPrinter, IconSparkles } from "@/components/Icon";
 import { useConfirm } from "@/components/ConfirmProvider";
 
 const MOTIVOS: MotivoMovimentacaoProduto[] = ["PRODUCAO", "VENDA", "AJUSTE", "PERDA"];
@@ -48,6 +49,8 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
   });
   const [registrandoMov, setRegistrandoMov] = useState(false);
   const [erroMov, setErroMov] = useState<string | null>(null);
+
+  const [etiquetaAberta, setEtiquetaAberta] = useState(false);
 
   async function carregar() {
     setCarregando(true);
@@ -213,10 +216,15 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
       <Link href="/estoque/produtos" className="text-base text-ink-secondary hover:underline">
         ← Produtos
       </Link>
-      <PageHeader
-        titulo={produto.nome}
-        descricao={`Estoque atual: ${produto.estoqueAtual} · Preço: ${formatarMoeda(produto.precoVenda)}`}
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageHeader
+          titulo={produto.nome}
+          descricao={`Estoque atual: ${produto.estoqueAtual} · Preço: ${formatarMoeda(produto.precoVenda)}`}
+        />
+        <Button variant="secondary" onClick={() => setEtiquetaAberta(true)} className="inline-flex items-center gap-1.5">
+          <IconPrinter className="h-4 w-4" /> Imprimir etiqueta
+        </Button>
+      </div>
 
       {erro && <ErrorBanner mensagem={erro} />}
 
@@ -448,6 +456,14 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
           </table>
         </Card>
       )}
+
+      <EtiquetaProduto
+        produtoId={produto.id}
+        nome={produto.nome}
+        precoVenda={produto.precoVenda}
+        aberto={etiquetaAberta}
+        onFechar={() => setEtiquetaAberta(false)}
+      />
     </main>
   );
 }

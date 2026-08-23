@@ -148,3 +148,23 @@ body {
 .markdown-basico > :last-child {
   margin-bottom: 0;
 }
+
+/*
+ * Impressão de etiqueta de produto (components/EtiquetaProduto.tsx): esconde o app
+ * inteiro (AppShell, nav, resto da página por trás da modal) e mostra só a área
+ * `#etiqueta-imprimir`, que fica fora de vista na tela normal e vira visível via
+ * `print:flex` (ver o componente) só quando entra em modo impressão.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #etiqueta-imprimir,
+  #etiqueta-imprimir * {
+    visibility: visible;
+  }
+  #etiqueta-imprimir {
+    position: absolute;
+    inset: 0;
+  }
+}
