@@ -12,7 +12,6 @@ import {
   MotivoMovimentacaoMateriaPrima,
   MovimentacaoMateriaPrimaRequest,
   MovimentacaoResponse,
-  stepQuantidade,
   TipoMovimentacao,
   UNIDADES_MEDIDA,
 } from "@/types/estoque";
@@ -222,7 +221,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="estoqueMinimo"
                 type="number"
-                step={stepQuantidade(form.unidadeMedida)}
+                step="1"
                 min="0"
                 value={form.estoqueMinimo}
                 onChange={(e) => setForm({ ...form, estoqueMinimo: arredondarQuantidade(Number(e.target.value), form.unidadeMedida) })}
@@ -282,7 +281,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="quantidade"
                 type="number"
-                step={stepQuantidade(materiaPrima.unidadeMedida)}
+                step="1"
                 min="0"
                 required
                 value={movForm.quantidade}

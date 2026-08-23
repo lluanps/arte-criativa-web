@@ -10,7 +10,6 @@ import {
   MateriaPrimaDesejadaResponse,
   MateriaPrimaRequest,
   MateriaPrimaResponse,
-  stepQuantidade,
   UNIDADES_MEDIDA,
 } from "@/types/estoque";
 import { CategoriaMateriaPrimaResponse } from "@/types/cadastros";
@@ -330,7 +329,7 @@ export default function MateriasPrimasPage() {
                   <Input
                     id="quantidadeComprada"
                     type="number"
-                    step={stepQuantidade(form.unidadeMedida)}
+                    step="1"
                     min="0"
                     required
                     value={form.quantidadeComprada}
@@ -363,7 +362,7 @@ export default function MateriasPrimasPage() {
                   <Input
                     id="estoqueMinimo"
                     type="number"
-                    step={stepQuantidade(form.unidadeMedida)}
+                    step="1"
                     min="0"
                     value={form.estoqueMinimo}
                     onChange={(e) => setForm({ ...form, estoqueMinimo: arredondarQuantidade(Number(e.target.value), form.unidadeMedida) })}

@@ -4,13 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
-import {
-  agruparMateriaPrimaPorCategoria,
-  arredondarQuantidade,
-  MateriaPrimaResponse,
-  ProdutoResponse,
-  stepQuantidade,
-} from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, arredondarQuantidade, MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 
@@ -210,7 +204,7 @@ export default function FichasTecnicasPage() {
                         <span className="mb-1 block text-sm text-ink-secondary">Quantidade</span>
                         <Input
                           type="number"
-                          step={stepQuantidade(unidadeEfetiva)}
+                          step="1"
                           min="0"
                           value={linha.quantidade}
                           onChange={(e) => atualizarLinha(index, { quantidade: arredondarQuantidade(Number(e.target.value), unidadeEfetiva) })}

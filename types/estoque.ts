@@ -115,13 +115,10 @@ export function quantidadeEhInteira(unidadeMedida: string | null | undefined): b
   return unidadeMedida === "un";
 }
 
-export function stepQuantidade(unidadeMedida: string | null | undefined): string {
-  return quantidadeEhInteira(unidadeMedida) ? "1" : "0.001";
-}
-
 /** Arredonda pra inteiro quando a unidade é "un" — usado no onChange do campo de
- * quantidade, além do `step`, porque o `step` sozinho não impede digitar "2,5" na
- * maioria dos browsers. */
+ * quantidade. O `step` do input em si fica fixo em "1" (igual aos demais campos
+ * numéricos do app) pra não ter um incremento de seta customizado por matéria-prima —
+ * isso aqui é o que de fato impede digitar/incrementar pra "2,5" numa unidade "un". */
 export function arredondarQuantidade(quantidade: number, unidadeMedida: string | null | undefined): number {
   return quantidadeEhInteira(unidadeMedida) ? Math.round(quantidade) : quantidade;
 }

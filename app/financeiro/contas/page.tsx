@@ -12,7 +12,7 @@ import {
   StatusConta,
   TipoConta,
 } from "@/types/financeiro";
-import { agruparMateriaPrimaPorCategoria, arredondarQuantidade, MateriaPrimaResponse, stepQuantidade } from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, arredondarQuantidade, MateriaPrimaResponse } from "@/types/estoque";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 
@@ -378,7 +378,7 @@ export default function ContasPage() {
                     const materiaPrimaSelecionada = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId);
                     const unidadeSelecionada = materiaPrimaSelecionada?.unidadeMedida;
                     const valorSugerido =
-                      materiaPrimaSelecionada && linha.quantidade > 0
+                      materiaPrimaSelecionada && materiaPrimaSelecionada.custoUnitario > 0 && linha.quantidade > 0
                         ? Math.round(linha.quantidade * materiaPrimaSelecionada.custoUnitario * 100) / 100
                         : null;
                     return (
@@ -405,7 +405,7 @@ export default function ContasPage() {
                         {index === 0 && <Label className="text-sm">Quantidade</Label>}
                         <Input
                           type="number"
-                          step={stepQuantidade(unidadeSelecionada)}
+                          step="1"
                           min="0"
                           placeholder="0"
                           value={linha.quantidade}

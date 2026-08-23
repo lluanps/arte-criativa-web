@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarData, formatarMoeda } from "@/lib/format";
-import {
-  agruparMateriaPrimaPorCategoria,
-  arredondarQuantidade,
-  MateriaPrimaResponse,
-  ProdutoResponse,
-  stepQuantidade,
-} from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, arredondarQuantidade, MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
 import { ReceitaItemRequest, ReceitaRequest, ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -308,7 +302,7 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                     </div>
                     <Input
                       type="number"
-                      step={stepQuantidade(unidadeEfetiva)}
+                      step="1"
                       min="0"
                       value={linha.quantidade}
                       onChange={(e) => atualizarLinha(index, { quantidade: arredondarQuantidade(Number(e.target.value), unidadeEfetiva) })}
