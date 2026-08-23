@@ -9,10 +9,13 @@ import {
   MateriaPrimaDesejadaResponse,
   MateriaPrimaRequest,
   MateriaPrimaResponse,
+  UNIDADES_MEDIDA,
 } from "@/types/estoque";
+import { CategoriaMateriaPrimaResponse } from "@/types/cadastros";
 import { PaginaResponse } from "@/types/common";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Paginacao } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Paginacao, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
+import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { IconAlertTriangle, IconSearch } from "@/components/Icon";
 import { alternarOrdenacao, Ordenacao } from "@/lib/ordenar";
 
@@ -24,21 +27,21 @@ type CampoOrdenacao = "nome" | "unidadeMedida" | "custoUnitario" | "estoqueAtual
  * campos) quanto "só anotar o nome" (só nome é lido nesse caso, ver `soAnotarNome`). */
 interface FormState {
   nome: string;
+  categoriaId: number | null;
   unidadeMedida: string;
   quantidadeComprada: number;
   valorPago: number;
   estoqueMinimo: number;
-  volumeMl: number | null;
   fornecedor: string;
 }
 
 const FORM_VAZIO: FormState = {
   nome: "",
+  categoriaId: null,
   unidadeMedida: "",
   quantidadeComprada: 0,
   valorPago: 0,
   estoqueMinimo: 0,
-  volumeMl: null,
   fornecedor: "",
 };
 
@@ -55,20 +58,30 @@ export default function MateriasPrimasPage() {
   const [salvando, setSalvando] = useState(false);
 
   const [desejadas, setDesejadas] = useState<MateriaPrimaDesejadaResponse[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaMateriaPrimaResponse[]>([]);
 
   const [busca, setBusca] = useState("");
   const buscaDebounced = useDebounced(busca);
+  const [filtroCategoria, setFiltroCategoria] = useState<number | "">("");
   const [apenasEstoqueBaixo, setApenasEstoqueBaixo] = useState(false);
   const [ordenacao, setOrdenacao] = useState<Ordenacao<CampoOrdenacao> | null>(null);
 
   const materiasPrimas = resultado?.conteudo ?? [];
-  const filtroAtivo = buscaDebounced.trim() !== "" || apenasEstoqueBaixo;
+  const filtroAtivo = buscaDebounced.trim() !== "" || filtroCategoria !== "" || apenasEstoqueBaixo;
 
   async function carregarDesejadas() {
     try {
       setDesejadas(await api.get<MateriaPrimaDesejadaResponse[]>("/materias-primas/desejadas"));
     } catch {
       // Lista de compras é complementar — se falhar, a listagem principal já mostra erro.
+    }
+  }
+
+  async function carregarCategorias() {
+    try {
+      setCategorias(await api.get<CategoriaMateriaPrimaResponse[]>("/categorias-materia-prima"));
+    } catch {
+      // Categorias são complementares (filtro/seletor) — se falhar, a listagem principal já mostra erro.
     }
   }
 
@@ -81,6 +94,7 @@ export default function MateriasPrimasPage() {
     try {
       const params = new URLSearchParams();
       if (buscaDebounced.trim()) params.set("busca", buscaDebounced.trim());
+      if (filtroCategoria !== "") params.set("categoriaId", String(filtroCategoria));
       if (apenasEstoqueBaixo) params.set("estoqueBaixo", "true");
       params.set("pagina", String(pagina));
       params.set("tamanho", String(TAMANHO_PAGINA));
@@ -103,10 +117,11 @@ export default function MateriasPrimasPage() {
   useEffect(() => {
     buscar(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buscaDebounced, apenasEstoqueBaixo, ordenacao]);
+  }, [buscaDebounced, filtroCategoria, apenasEstoqueBaixo, ordenacao]);
 
   useEffect(() => {
     carregarDesejadas();
+    carregarCategorias();
   }, []);
 
   function resetarForm() {
@@ -146,11 +161,11 @@ export default function MateriasPrimasPage() {
       } else {
         const request: MateriaPrimaRequest = {
           nome: form.nome,
+          categoriaId: form.categoriaId,
           unidadeMedida: form.unidadeMedida,
           quantidadeComprada: form.quantidadeComprada,
           valorPago: form.valorPago,
           estoqueMinimo: form.estoqueMinimo,
-          volumeMl: form.volumeMl,
           fornecedor: form.fornecedor,
         };
         await api.post("/materias-primas", request);
@@ -208,6 +223,7 @@ export default function MateriasPrimasPage() {
 
   function limparFiltros() {
     setBusca("");
+    setFiltroCategoria("");
     setApenasEstoqueBaixo(false);
   }
 
@@ -275,19 +291,36 @@ export default function MateriasPrimasPage() {
             {!soAnotarNome && (
               <>
                 <div>
+                  <Label htmlFor="categoriaId">Categoria</Label>
+                  <SelectComCriacao
+                    id="categoriaId"
+                    itens={categorias}
+                    value={form.categoriaId ?? ""}
+                    onChange={(id) => setForm({ ...form, categoriaId: id === "" ? null : id })}
+                    onCriar={(nome) => api.post<CategoriaMateriaPrimaResponse>("/categorias-materia-prima", { nome })}
+                    onCriado={(item) => setCategorias((atual) => [...atual, item])}
+                    novoPlaceholder="Nome da categoria"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
-                  <Input
+                  <Select
                     id="unidadeMedida"
-                    list="unidades-medida-sugeridas"
-                    placeholder="g, kg, ml, l, cm, m, un..."
                     required
                     value={form.unidadeMedida}
                     onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
-                  />
+                  >
+                    <option value="">Selecione...</option>
+                    {UNIDADES_MEDIDA.map((u) => (
+                      <option key={u.value} value={u.value}>
+                        {u.label}
+                      </option>
+                    ))}
+                  </Select>
                   {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
                   <p className="mt-1 text-sm text-ink-secondary">
-                    Usando g, kg, ml, l, cm, m ou un a ficha técnica converte automaticamente se a receita usar uma
-                    unidade diferente (ex: comprar em kg e usar em g).
+                    A ficha técnica converte automaticamente se a receita usar uma unidade diferente (ex: comprar em
+                    kg e usar em g).
                   </p>
                 </div>
                 <div>
@@ -334,17 +367,6 @@ export default function MateriasPrimasPage() {
                     onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="volumeMl">Volume (ml)</Label>
-                  <Input
-                    id="volumeMl"
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={form.volumeMl ?? ""}
-                    onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
-                  />
-                </div>
                 <div className="sm:col-span-2">
                   <Label htmlFor="fornecedor">Fornecedor</Label>
                   <Input
@@ -365,15 +387,6 @@ export default function MateriasPrimasPage() {
         </Card>
       )}
 
-      <datalist id="unidades-medida-sugeridas">
-        <option value="g" />
-        <option value="kg" />
-        <option value="ml" />
-        <option value="l" />
-        <option value="cm" />
-        <option value="m" />
-        <option value="un" />
-      </datalist>
       <datalist id="materias-primas-desejadas">
         {desejadas.map((d) => (
           <option key={d.id} value={d.nome} />
@@ -419,6 +432,23 @@ export default function MateriasPrimasPage() {
               />
             </div>
           </div>
+          {categorias.length > 0 && (
+            <div className="min-w-[180px]">
+              <Label htmlFor="filtroCategoria">Categoria</Label>
+              <Select
+                id="filtroCategoria"
+                value={filtroCategoria}
+                onChange={(e) => setFiltroCategoria(e.target.value === "" ? "" : Number(e.target.value))}
+              >
+                <option value="">Todas</option>
+                {categorias.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
           <label className="flex h-[46px] items-center gap-2 text-base text-ink-secondary">
             <input
               type="checkbox"
@@ -447,6 +477,7 @@ export default function MateriasPrimasPage() {
               <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
                 <tr>
                   {cabecalho("nome", "Nome")}
+                  <th className="px-5 py-4">Categoria</th>
                   {cabecalho("unidadeMedida", "Unidade")}
                   {cabecalho("custoUnitario", "Custo unitário")}
                   {cabecalho("estoqueAtual", "Estoque")}
@@ -465,6 +496,7 @@ export default function MateriasPrimasPage() {
                           {mp.nome}
                         </Link>
                       </td>
+                      <td className="px-5 py-4 text-ink-secondary">{mp.categoriaNome ?? "—"}</td>
                       <td className="px-5 py-4 text-ink-secondary">{mp.unidadeMedida}</td>
                       <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(mp.custoUnitario)}</td>
                       <td className="px-5 py-4">

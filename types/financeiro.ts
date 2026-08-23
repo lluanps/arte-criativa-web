@@ -1,5 +1,5 @@
 export type TipoLancamento = "RECEITA" | "DESPESA";
-export type OrigemLancamento = "VENDA" | "COMPRA" | "MANUAL";
+export type OrigemLancamento = "VENDA" | "COMPRA" | "CONTA" | "MANUAL";
 export type TipoConta = "PAGAR" | "RECEBER";
 export type StatusConta = "PENDENTE" | "PAGO" | "ATRASADO";
 
@@ -30,6 +30,17 @@ export interface ContaRequest {
   vencimento: string;
 }
 
+/** Registra uma conta parcelada de uma vez: o backend gera `quantidadeParcelas`
+ * contas independentes, uma por mês a partir de `primeiroVencimento`, cada uma já
+ * paga/editável/excluível sozinha dali em diante — ver ContaService.criarParcelada. */
+export interface ContaParceladaRequest {
+  tipo: TipoConta;
+  descricao: string;
+  valorTotal: number;
+  quantidadeParcelas: number;
+  primeiroVencimento: string;
+}
+
 export interface ContaResponse {
   id: number;
   tipo: TipoConta;
@@ -38,6 +49,10 @@ export interface ContaResponse {
   vencimento: string;
   status: StatusConta;
   pagoEm: string | null;
+  /** Nulos = conta avulsa (não veio de um parcelamento). */
+  grupoParcelamentoId: string | null;
+  numeroParcela: number | null;
+  totalParcelas: number | null;
   criadoEm: string;
 }
 

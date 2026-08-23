@@ -12,9 +12,12 @@ import {
   MovimentacaoMateriaPrimaRequest,
   MovimentacaoResponse,
   TipoMovimentacao,
+  UNIDADES_MEDIDA,
 } from "@/types/estoque";
+import { CategoriaMateriaPrimaResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
+import { SelectComCriacao } from "@/components/SelectComCriacao";
 
 const MOTIVOS: MotivoMovimentacaoMateriaPrima[] = ["COMPRA", "PRODUCAO", "AJUSTE", "PERDA"];
 
@@ -25,6 +28,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
 
   const [materiaPrima, setMateriaPrima] = useState<MateriaPrimaResponse | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoResponse[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaMateriaPrimaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -47,19 +51,21 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     setCarregando(true);
     setErro(null);
     try {
-      const [mp, movs] = await Promise.all([
+      const [mp, movs, cats] = await Promise.all([
         api.get<MateriaPrimaResponse>(`/materias-primas/${id}`),
         api.get<MovimentacaoResponse[]>(`/materias-primas/${id}/movimentacoes`),
+        api.get<CategoriaMateriaPrimaResponse[]>("/categorias-materia-prima"),
       ]);
       setMateriaPrima(mp);
       setForm({
         nome: mp.nome,
+        categoriaId: mp.categoriaId,
         unidadeMedida: mp.unidadeMedida,
         estoqueMinimo: mp.estoqueMinimo,
-        volumeMl: mp.volumeMl,
         fornecedor: mp.fornecedor ?? "",
       });
       setMovimentacoes(movs);
+      setCategorias(cats);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar matéria-prima");
     } finally {
@@ -170,28 +176,36 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               {errosCampos.nome && <p className="mt-1 text-sm text-critical">{errosCampos.nome}</p>}
             </div>
             <div>
+              <Label htmlFor="categoriaId">Categoria</Label>
+              <SelectComCriacao
+                id="categoriaId"
+                itens={categorias}
+                value={form.categoriaId ?? ""}
+                onChange={(id) => setForm({ ...form, categoriaId: id === "" ? null : id })}
+                onCriar={(nome) => api.post<CategoriaMateriaPrimaResponse>("/categorias-materia-prima", { nome })}
+                onCriado={(item) => setCategorias((atual) => [...atual, item])}
+                novoPlaceholder="Nome da categoria"
+              />
+            </div>
+            <div>
               <Label htmlFor="unidadeMedida">Unidade de medida *</Label>
-              <Input
+              <Select
                 id="unidadeMedida"
-                list="unidades-medida-sugeridas"
                 required
                 value={form.unidadeMedida}
                 onChange={(e) => setForm({ ...form, unidadeMedida: e.target.value })}
-              />
+              >
+                <option value="">Selecione...</option>
+                {UNIDADES_MEDIDA.map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
+              </Select>
               {errosCampos.unidadeMedida && <p className="mt-1 text-sm text-critical">{errosCampos.unidadeMedida}</p>}
               <p className="mt-1 text-sm text-ink-secondary">
-                Usando g, kg, ml, l, cm, m ou un a ficha técnica converte automaticamente se a receita usar uma
-                unidade diferente.
+                A ficha técnica converte automaticamente se a receita usar uma unidade diferente.
               </p>
-              <datalist id="unidades-medida-sugeridas">
-                <option value="g" />
-                <option value="kg" />
-                <option value="ml" />
-                <option value="l" />
-                <option value="cm" />
-                <option value="m" />
-                <option value="un" />
-              </datalist>
             </div>
             <div>
               <Label htmlFor="custoUnitario">Custo unitário</Label>
@@ -210,17 +224,6 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
                 min="0"
                 value={form.estoqueMinimo}
                 onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="volumeMl">Volume (ml)</Label>
-              <Input
-                id="volumeMl"
-                type="number"
-                step="1"
-                min="0"
-                value={form.volumeMl ?? ""}
-                onChange={(e) => setForm({ ...form, volumeMl: e.target.value === "" ? null : Number(e.target.value) })}
               />
             </div>
             <div className="sm:col-span-2">
