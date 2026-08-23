@@ -70,9 +70,10 @@ export interface ContaResponse {
   numeroParcela: number | null;
   totalParcelas: number | null;
   criadoEm: string;
-  /** Vazio/ausente = conta comum. Não vazio = essa conta é uma compra de matéria-prima
-   * (já deu entrada no estoque); não dá pra editar o valor dessas contas depois. */
-  itensMateriaPrima?: ItemMateriaPrimaCompra[];
+  /** Vazio = conta comum. Não vazio = essa conta é uma compra de matéria-prima (já deu
+   * entrada no estoque); não dá pra editar o valor dessas contas depois. Numa conta
+   * parcelada, o mesmo item aparece igual em todas as parcelas do grupo. */
+  itensMateriaPrima: ItemMateriaPrimaCompra[];
 }
 
 export interface DashboardFinanceiroResponse {
