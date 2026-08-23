@@ -116,7 +116,7 @@ export function AlertaContaAtrasada() {
   return (
     <div className="rounded-2xl border border-hairline bg-surface p-5 shadow-2xl">
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-critical-soft text-critical">
           <IconAlertTriangle className="h-4.5 w-4.5" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1">
@@ -161,7 +161,7 @@ export function AlertaContaAtrasada() {
 
       <button
         onClick={() => setOcultoNestaSessao(true)}
-        className="mt-3 w-full rounded-lg bg-accent px-4 py-2.5 text-base font-semibold text-accent-ink shadow-sm transition-colors hover:brightness-105"
+        className="mt-3 w-full rounded-lg border border-hairline px-4 py-2.5 text-base font-semibold text-ink-secondary shadow-sm transition-colors hover:bg-surface-hover"
       >
         Ok, entendi
       </button>

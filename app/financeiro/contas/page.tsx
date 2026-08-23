@@ -375,7 +375,12 @@ export default function ContasPage() {
                 </p>
                 <div className="grid gap-2">
                   {itensCompra.map((linha, index) => {
-                    const unidadeSelecionada = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId)?.unidadeMedida;
+                    const materiaPrimaSelecionada = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId);
+                    const unidadeSelecionada = materiaPrimaSelecionada?.unidadeMedida;
+                    const valorSugerido =
+                      materiaPrimaSelecionada && linha.quantidade > 0
+                        ? Math.round(linha.quantidade * materiaPrimaSelecionada.custoUnitario * 100) / 100
+                        : null;
                     return (
                     <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_120px_auto] sm:items-end">
                       <div className="col-span-2 sm:col-span-1">
@@ -419,6 +424,16 @@ export default function ContasPage() {
                           value={linha.valor}
                           onChange={(e) => atualizarLinhaCompra(index, { valor: Number(e.target.value) })}
                         />
+                        {valorSugerido !== null && valorSugerido !== linha.valor && (
+                          <button
+                            type="button"
+                            onClick={() => atualizarLinhaCompra(index, { valor: valorSugerido })}
+                            title="Preenche o valor com quantidade × custo unitário atual dessa matéria-prima"
+                            className="mt-1 block text-sm text-ink-secondary hover:text-accent hover:underline"
+                          >
+                            sugestão: {formatarMoeda(valorSugerido)}
+                          </button>
+                        )}
                       </div>
                       <div className="col-span-2 sm:col-span-1">
                         <Button
