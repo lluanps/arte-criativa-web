@@ -5,10 +5,12 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { criarArteNoCanva, gerarDescricaoComChatGPT, gerarImagemComChatGPT } from "@/lib/ai-shortcuts";
 import { formatarMoeda } from "@/lib/format";
+import { useDebounced } from "@/lib/useDebounced";
 import { ProdutoRequest, ProdutoResponse } from "@/types/estoque";
 import { VendaResponse } from "@/types/vendas";
 import { CategoriaResponse } from "@/types/cadastros";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
+import { PaginaResponse } from "@/types/common";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Paginacao, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
 import { GaleriaFotos } from "@/components/GaleriaFotos";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -23,9 +25,10 @@ import {
   IconSearch,
   IconSparkles,
 } from "@/components/Icon";
-import { alternarOrdenacao, compararValores, Ordenacao } from "@/lib/ordenar";
+import { alternarOrdenacao, Ordenacao } from "@/lib/ordenar";
 
 const MAX_FOTOS = 5;
+const TAMANHO_PAGINA = 20;
 
 type CampoOrdenacao = "nome" | "categoriaNome" | "volumeMl" | "precoVenda" | "estoqueAtual";
 
@@ -48,10 +51,13 @@ function iconeDoProduto(categoria: string | null) {
 
 export default function ProdutosPage() {
   const perguntar = useConfirm();
-  const [produtos, setProdutos] = useState<ProdutoResponse[]>([]);
+  const [resultado, setResultado] = useState<PaginaResponse<ProdutoResponse> | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(0);
+  const [resumo, setResumo] = useState({ ativos: 0, estoqueBaixo: 0 });
   const [vendas, setVendas] = useState<VendaResponse[]>([]);
   const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
-  const [carregando, setCarregando] = useState(true);
+  const [carregandoInicial, setCarregandoInicial] = useState(true);
+  const [carregandoLista, setCarregandoLista] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [form, setForm] = useState<ProdutoRequest>(PRODUTO_VAZIO);
@@ -59,32 +65,78 @@ export default function ProdutosPage() {
   const [salvando, setSalvando] = useState(false);
 
   const [busca, setBusca] = useState("");
+  const buscaDebounced = useDebounced(busca);
   const [filtroCategoria, setFiltroCategoria] = useState<number | "">("");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "ativos" | "inativos">("todos");
   const [apenasEstoqueBaixo, setApenasEstoqueBaixo] = useState(false);
   const [ordenacao, setOrdenacao] = useState<Ordenacao<CampoOrdenacao> | null>(null);
 
-  async function carregar() {
-    setCarregando(true);
+  const produtos = resultado?.conteudo ?? [];
+  const filtroAtivo = buscaDebounced.trim() !== "" || filtroCategoria !== "" || filtroStatus !== "todos" || apenasEstoqueBaixo;
+
+  /** Busca uma página específica com os filtros/ordenação atuais — usada tanto pelo
+   * efeito que refaz a busca quando algum filtro muda (sempre a partir da página 0)
+   * quanto pelos botões de "Anterior"/"Próxima" (que pedem uma página específica). */
+  async function buscarProdutos(pagina: number) {
+    setCarregandoLista(true);
     setErro(null);
     try {
-      const [dadosProdutos, dadosVendas, dadosCategorias] = await Promise.all([
-        api.get<ProdutoResponse[]>("/produtos"),
-        api.get<VendaResponse[]>("/vendas"),
-        api.get<CategoriaResponse[]>("/categorias"),
-      ]);
-      setProdutos(dadosProdutos);
-      setVendas(dadosVendas);
-      setCategorias(dadosCategorias);
+      const params = new URLSearchParams();
+      if (buscaDebounced.trim()) params.set("busca", buscaDebounced.trim());
+      if (filtroCategoria !== "") params.set("categoriaId", String(filtroCategoria));
+      if (filtroStatus !== "todos") params.set("status", filtroStatus);
+      if (apenasEstoqueBaixo) params.set("estoqueBaixo", "true");
+      params.set("pagina", String(pagina));
+      params.set("tamanho", String(TAMANHO_PAGINA));
+      if (ordenacao) {
+        params.set("ordenarPor", ordenacao.campo);
+        params.set("direcao", ordenacao.direcao);
+      }
+      const dados = await api.get<PaginaResponse<ProdutoResponse>>(`/produtos/busca?${params.toString()}`);
+      setResultado(dados);
+      setPaginaAtual(pagina);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar produtos");
     } finally {
-      setCarregando(false);
+      setCarregandoLista(false);
+    }
+  }
+
+  /** Contagens dos cards do topo — independentes do filtro que o usuário tem aplicado
+   * na tabela agora (senão "Produtos ativos"/"Estoque baixo" mudaria toda vez que
+   * alguém filtrasse a lista, o que não faz sentido pra um resumo geral). */
+  async function carregarResumo() {
+    try {
+      const [ativosResp, baixoResp] = await Promise.all([
+        api.get<PaginaResponse<ProdutoResponse>>("/produtos/busca?status=ativos&tamanho=1"),
+        api.get<PaginaResponse<ProdutoResponse>>("/produtos/busca?estoqueBaixo=true&tamanho=1"),
+      ]);
+      setResumo({ ativos: ativosResp.totalElementos, estoqueBaixo: baixoResp.totalElementos });
+    } catch {
+      // Resumo é complementar aos cards — se falhar, a listagem principal já mostra erro.
+    }
+  }
+
+  async function carregarInicial() {
+    setCarregandoInicial(true);
+    setErro(null);
+    try {
+      const [dadosVendas, dadosCategorias] = await Promise.all([
+        api.get<VendaResponse[]>("/vendas"),
+        api.get<CategoriaResponse[]>("/categorias"),
+      ]);
+      setVendas(dadosVendas);
+      setCategorias(dadosCategorias);
+      await carregarResumo();
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao carregar produtos");
+    } finally {
+      setCarregandoInicial(false);
     }
   }
 
   useEffect(() => {
-    carregar();
+    carregarInicial();
 
     // Vem de "Transformar em produto" numa ideia (app/ideias/[id]) — pré-preenche o
     // formulário e já abre. Lido direto da URL (não useSearchParams) pra não precisar
@@ -101,7 +153,14 @@ export default function ProdutosPage() {
       setMostrarForm(true);
       window.history.replaceState(null, "", window.location.pathname);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refaz a busca (sempre da página 0) toda vez que busca/filtro/ordenação muda.
+  useEffect(() => {
+    buscarProdutos(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaDebounced, filtroCategoria, filtroStatus, apenasEstoqueBaixo, ordenacao]);
 
   async function criar(e: React.FormEvent) {
     e.preventDefault();
@@ -112,7 +171,7 @@ export default function ProdutosPage() {
       await api.post("/produtos", form);
       setForm(PRODUTO_VAZIO);
       setMostrarForm(false);
-      await carregar();
+      await Promise.all([buscarProdutos(0), carregarResumo()]);
     } catch (e) {
       if (e instanceof ApiError) {
         setErro(e.message);
@@ -128,7 +187,7 @@ export default function ProdutosPage() {
   async function desativar(produto: ProdutoResponse) {
     try {
       await api.put(`/produtos/${produto.id}`, { ...produto, ativo: false });
-      await carregar();
+      await Promise.all([buscarProdutos(paginaAtual), carregarResumo()]);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao desativar produto");
     }
@@ -162,7 +221,7 @@ export default function ProdutosPage() {
     let motivoBloqueio: string;
     try {
       await api.del(`/produtos/${produto.id}`);
-      await carregar();
+      await Promise.all([buscarProdutos(paginaAtual), carregarResumo()]);
       return;
     } catch (e) {
       // 422 = bloqueio já detectado pela API antes de tentar excluir (o caso normal,
@@ -199,7 +258,7 @@ export default function ProdutosPage() {
 
     try {
       await api.del(`/produtos/${produto.id}/definitivo`);
-      await carregar();
+      await Promise.all([buscarProdutos(paginaAtual), carregarResumo()]);
     } catch (e) {
       // 422 = IllegalStateException (tinha venda de verdade); 409 fica como rede de
       // segurança pra uma violação de FK não prevista pela checagem.
@@ -218,21 +277,6 @@ export default function ProdutosPage() {
   });
   const vendidoNoMes = vendasDoMes.reduce((soma, v) => soma + v.valorTotal, 0);
   const ticketMedio = vendasDoMes.length > 0 ? vendidoNoMes / vendasDoMes.length : 0;
-  const estoqueBaixoCount = produtos.filter((p) => p.estoqueAtual <= p.estoqueMinimo).length;
-
-  const buscaNormalizada = busca.trim().toLowerCase();
-  const produtosFiltrados = produtos.filter((p) => {
-    if (buscaNormalizada && !p.nome.toLowerCase().includes(buscaNormalizada)) return false;
-    if (filtroCategoria !== "" && p.categoriaId !== filtroCategoria) return false;
-    if (filtroStatus === "ativos" && !p.ativo) return false;
-    if (filtroStatus === "inativos" && p.ativo) return false;
-    if (apenasEstoqueBaixo && p.estoqueAtual > p.estoqueMinimo) return false;
-    return true;
-  });
-  const produtosOrdenados = ordenacao
-    ? [...produtosFiltrados].sort((a, b) => compararValores(a[ordenacao.campo], b[ordenacao.campo], ordenacao.direcao))
-    : produtosFiltrados;
-  const filtroAtivo = buscaNormalizada !== "" || filtroCategoria !== "" || filtroStatus !== "todos" || apenasEstoqueBaixo;
 
   function limparFiltros() {
     setBusca("");
@@ -376,19 +420,19 @@ export default function ProdutosPage() {
         </Card>
       )}
 
-      {carregando ? (
+      {carregandoInicial ? (
         <p className="text-base text-ink-secondary">Carregando...</p>
       ) : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Card>
               <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Produtos ativos</p>
-              <p className="mt-1.5 text-3xl font-extrabold tabular-figures text-ink">{produtos.filter((p) => p.ativo).length}</p>
+              <p className="mt-1.5 text-3xl font-extrabold tabular-figures text-ink">{resumo.ativos}</p>
             </Card>
             <Card>
               <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Estoque baixo</p>
-              <p className={`mt-1.5 text-3xl font-extrabold tabular-figures ${estoqueBaixoCount > 0 ? "text-warning" : "text-ink"}`}>
-                {estoqueBaixoCount}
+              <p className={`mt-1.5 text-3xl font-extrabold tabular-figures ${resumo.estoqueBaixo > 0 ? "text-warning" : "text-ink"}`}>
+                {resumo.estoqueBaixo}
               </p>
             </Card>
             <Card>
@@ -401,7 +445,7 @@ export default function ProdutosPage() {
             </Card>
           </div>
 
-          {produtos.length > 0 && (
+          {!(!filtroAtivo && resultado?.totalElementos === 0) && (
             <div className="mb-4 flex flex-wrap items-end gap-3">
               <div className="min-w-[220px] flex-1">
                 <Label htmlFor="busca">Buscar</Label>
@@ -456,101 +500,112 @@ export default function ProdutosPage() {
             </div>
           )}
 
-          {produtos.length === 0 ? (
-            <EmptyState mensagem="Nenhum produto cadastrado ainda." />
-          ) : produtosFiltrados.length === 0 ? (
-            <EmptyState mensagem="Nenhum produto encontrado com esse filtro." />
+          {carregandoLista ? (
+            <p className="text-base text-ink-secondary">Carregando...</p>
+          ) : produtos.length === 0 ? (
+            <EmptyState mensagem={filtroAtivo ? "Nenhum produto encontrado com esse filtro." : "Nenhum produto cadastrado ainda."} />
           ) : (
-            <Card className="overflow-x-auto p-0">
-              <table className="w-full text-base">
-                <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
-                  <tr>
-                    {cabecalho("nome", "Produto")}
-                    {cabecalho("categoriaNome", "Categoria")}
-                    {cabecalho("volumeMl", "Volume")}
-                    {cabecalho("precoVenda", "Preço")}
-                    {cabecalho("estoqueAtual", "Estoque")}
-                    <th className="px-5 py-4"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {produtosOrdenados.map((produto) => {
-                    const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
-                    const referencia = Math.max(produto.estoqueMinimo * 3, 1);
-                    const pctBarra = Math.max(6, Math.min(100, (produto.estoqueAtual / referencia) * 100));
-                    const Icone = iconeDoProduto(produto.categoriaNome);
-                    return (
-                      <tr key={produto.id} className="border-b border-hairline last:border-0">
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3.5">
-                            {produto.fotosUrls[0] ? (
-                              // eslint-disable-next-line @next/next/no-img-element -- URL dinâmica (Blob ou link externo)
-                              <img
-                                src={produto.fotosUrls[0]}
-                                alt=""
-                                className="h-11 w-11 shrink-0 rounded-xl object-cover"
-                              />
-                            ) : (
-                              <div
-                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                                  estoqueBaixo ? "bg-warning-soft text-warning" : "bg-good-soft text-good"
-                                }`}
-                              >
-                                <Icone className="h-5 w-5" />
-                              </div>
-                            )}
-                            <div>
-                              <Link href={`/estoque/produtos/${produto.id}`} className="font-semibold text-ink hover:underline">
-                                {produto.nome}
-                              </Link>
-                              {!produto.ativo && <span className="ml-2 text-sm text-ink-faint">(inativo)</span>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-ink-secondary">{produto.categoriaNome ?? "—"}</td>
-                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{produto.volumeMl ? `${produto.volumeMl}ml` : "—"}</td>
-                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(produto.precoVenda)}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-32 overflow-hidden rounded-full bg-hairline">
-                                <span
-                                  className={`block h-full rounded-full ${estoqueBaixo ? "bg-warning" : "bg-good"}`}
-                                  style={{ width: `${pctBarra}%` }}
+            <>
+              <Card className="overflow-x-auto p-0">
+                <table className="w-full text-base">
+                  <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                    <tr>
+                      {cabecalho("nome", "Produto")}
+                      {cabecalho("categoriaNome", "Categoria")}
+                      {cabecalho("volumeMl", "Volume")}
+                      {cabecalho("precoVenda", "Preço")}
+                      {cabecalho("estoqueAtual", "Estoque")}
+                      <th className="px-5 py-4"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {produtos.map((produto) => {
+                      const estoqueBaixo = produto.estoqueAtual <= produto.estoqueMinimo;
+                      const referencia = Math.max(produto.estoqueMinimo * 3, 1);
+                      const pctBarra = Math.max(6, Math.min(100, (produto.estoqueAtual / referencia) * 100));
+                      const Icone = iconeDoProduto(produto.categoriaNome);
+                      return (
+                        <tr key={produto.id} className="border-b border-hairline last:border-0">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3.5">
+                              {produto.fotosUrls[0] ? (
+                                // eslint-disable-next-line @next/next/no-img-element -- URL dinâmica (Blob ou link externo)
+                                <img
+                                  src={produto.fotosUrls[0]}
+                                  alt=""
+                                  className="h-11 w-11 shrink-0 rounded-xl object-cover"
                                 />
-                              </div>
-                              {estoqueBaixo && (
-                                <Badge tone="warning">
-                                  <span className="flex items-center gap-1">
-                                    <IconAlertTriangle className="h-3 w-3" strokeWidth={2.4} />
-                                    baixo
-                                  </span>
-                                </Badge>
+                              ) : (
+                                <div
+                                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                                    estoqueBaixo ? "bg-warning-soft text-warning" : "bg-good-soft text-good"
+                                  }`}
+                                >
+                                  <Icone className="h-5 w-5" />
+                                </div>
                               )}
+                              <div>
+                                <Link href={`/estoque/produtos/${produto.id}`} className="font-semibold text-ink hover:underline">
+                                  {produto.nome}
+                                </Link>
+                                {!produto.ativo && <span className="ml-2 text-sm text-ink-faint">(inativo)</span>}
+                              </div>
                             </div>
-                            <span className="text-sm text-ink-secondary tabular-figures">{produto.estoqueAtual} un.</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <Link
-                            href={`/estoque/produtos/${produto.id}`}
-                            className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-accent"
-                          >
-                            Ver <IconArrowRight className="h-4 w-4" strokeWidth={2.4} />
-                          </Link>
-                          <button
-                            onClick={() => excluir(produto)}
-                            className="ml-3 text-sm text-critical hover:underline"
-                          >
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </Card>
+                          </td>
+                          <td className="px-5 py-4 text-ink-secondary">{produto.categoriaNome ?? "—"}</td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">{produto.volumeMl ? `${produto.volumeMl}ml` : "—"}</td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(produto.precoVenda)}</td>
+                          <td className="px-5 py-4">
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-hairline">
+                                  <span
+                                    className={`block h-full rounded-full ${estoqueBaixo ? "bg-warning" : "bg-good"}`}
+                                    style={{ width: `${pctBarra}%` }}
+                                  />
+                                </div>
+                                {estoqueBaixo && (
+                                  <Badge tone="warning">
+                                    <span className="flex items-center gap-1">
+                                      <IconAlertTriangle className="h-3 w-3" strokeWidth={2.4} />
+                                      baixo
+                                    </span>
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-sm text-ink-secondary tabular-figures">{produto.estoqueAtual} un.</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <Link
+                              href={`/estoque/produtos/${produto.id}`}
+                              className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-accent"
+                            >
+                              Ver <IconArrowRight className="h-4 w-4" strokeWidth={2.4} />
+                            </Link>
+                            <button
+                              onClick={() => excluir(produto)}
+                              className="ml-3 text-sm text-critical hover:underline"
+                            >
+                              Excluir
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Card>
+              {resultado && (
+                <Paginacao
+                  pagina={resultado.pagina}
+                  totalPaginas={resultado.totalPaginas}
+                  totalElementos={resultado.totalElementos}
+                  tamanho={resultado.tamanho}
+                  onMudarPagina={buscarProdutos}
+                />
+              )}
+            </>
           )}
         </>
       )}

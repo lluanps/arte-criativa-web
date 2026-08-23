@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
+import { useDebounced } from "@/lib/useDebounced";
 import { MateriaPrimaRequest, MateriaPrimaResponse } from "@/types/estoque";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
+import { PaginaResponse } from "@/types/common";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Paginacao } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { IconAlertTriangle, IconSearch } from "@/components/Icon";
-import { alternarOrdenacao, compararValores, Ordenacao } from "@/lib/ordenar";
+import { alternarOrdenacao, Ordenacao } from "@/lib/ordenar";
+
+const TAMANHO_PAGINA = 20;
 
 type CampoOrdenacao = "nome" | "unidadeMedida" | "custoUnitario" | "estoqueAtual";
 
@@ -23,7 +27,8 @@ const MATERIA_PRIMA_VAZIA: MateriaPrimaRequest = {
 
 export default function MateriasPrimasPage() {
   const perguntar = useConfirm();
-  const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrimaResponse[]>([]);
+  const [resultado, setResultado] = useState<PaginaResponse<MateriaPrimaResponse> | null>(null);
+  const [paginaAtual, setPaginaAtual] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -32,15 +37,32 @@ export default function MateriasPrimasPage() {
   const [salvando, setSalvando] = useState(false);
 
   const [busca, setBusca] = useState("");
+  const buscaDebounced = useDebounced(busca);
   const [apenasEstoqueBaixo, setApenasEstoqueBaixo] = useState(false);
   const [ordenacao, setOrdenacao] = useState<Ordenacao<CampoOrdenacao> | null>(null);
 
-  async function carregar() {
+  const materiasPrimas = resultado?.conteudo ?? [];
+  const filtroAtivo = buscaDebounced.trim() !== "" || apenasEstoqueBaixo;
+
+  /** Busca uma página específica com os filtros/ordenação atuais — usada tanto pelo
+   * efeito que refaz a busca quando algum filtro muda (sempre a partir da página 0)
+   * quanto pelos botões de "Anterior"/"Próxima" (que pedem uma página específica). */
+  async function buscar(pagina: number) {
     setCarregando(true);
     setErro(null);
     try {
-      const dados = await api.get<MateriaPrimaResponse[]>("/materias-primas");
-      setMateriasPrimas(dados);
+      const params = new URLSearchParams();
+      if (buscaDebounced.trim()) params.set("busca", buscaDebounced.trim());
+      if (apenasEstoqueBaixo) params.set("estoqueBaixo", "true");
+      params.set("pagina", String(pagina));
+      params.set("tamanho", String(TAMANHO_PAGINA));
+      if (ordenacao) {
+        params.set("ordenarPor", ordenacao.campo);
+        params.set("direcao", ordenacao.direcao);
+      }
+      const dados = await api.get<PaginaResponse<MateriaPrimaResponse>>(`/materias-primas/busca?${params.toString()}`);
+      setResultado(dados);
+      setPaginaAtual(pagina);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar matérias-primas");
     } finally {
@@ -48,9 +70,12 @@ export default function MateriasPrimasPage() {
     }
   }
 
+  // Refaz a busca (sempre da página 0) toda vez que busca/filtro/ordenação muda —
+  // inclui o carregamento inicial, já que roda uma vez no mount com os valores padrão.
   useEffect(() => {
-    carregar();
-  }, []);
+    buscar(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaDebounced, apenasEstoqueBaixo, ordenacao]);
 
   async function criar(e: React.FormEvent) {
     e.preventDefault();
@@ -61,7 +86,7 @@ export default function MateriasPrimasPage() {
       await api.post("/materias-primas", form);
       setForm(MATERIA_PRIMA_VAZIA);
       setMostrarForm(false);
-      await carregar();
+      await buscar(0);
     } catch (e) {
       if (e instanceof ApiError) {
         setErro(e.message);
@@ -88,7 +113,7 @@ export default function MateriasPrimasPage() {
 
     try {
       await api.del(`/materias-primas/${materiaPrima.id}`);
-      await carregar();
+      await buscar(paginaAtual);
     } catch (e) {
       if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
         await perguntar({
@@ -102,17 +127,6 @@ export default function MateriasPrimasPage() {
       setErro(e instanceof ApiError ? e.message : "Erro ao excluir matéria-prima");
     }
   }
-
-  const buscaNormalizada = busca.trim().toLowerCase();
-  const materiasPrimasFiltradas = materiasPrimas.filter((mp) => {
-    if (buscaNormalizada && !mp.nome.toLowerCase().includes(buscaNormalizada)) return false;
-    if (apenasEstoqueBaixo && mp.estoqueAtual > mp.estoqueMinimo) return false;
-    return true;
-  });
-  const materiasPrimasOrdenadas = ordenacao
-    ? [...materiasPrimasFiltradas].sort((a, b) => compararValores(a[ordenacao.campo], b[ordenacao.campo], ordenacao.direcao))
-    : materiasPrimasFiltradas;
-  const filtroAtivo = buscaNormalizada !== "" || apenasEstoqueBaixo;
 
   function limparFiltros() {
     setBusca("");
@@ -227,7 +241,7 @@ export default function MateriasPrimasPage() {
         <option value="un" />
       </datalist>
 
-      {!carregando && materiasPrimas.length > 0 && (
+      {!(!filtroAtivo && resultado?.totalElementos === 0) && (
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <div className="min-w-[220px] flex-1">
             <Label htmlFor="busca">Buscar</Label>
@@ -262,72 +276,81 @@ export default function MateriasPrimasPage() {
       {carregando ? (
         <p className="text-base text-ink-secondary">Carregando...</p>
       ) : materiasPrimas.length === 0 ? (
-        <EmptyState mensagem="Nenhuma matéria-prima cadastrada ainda." />
-      ) : materiasPrimasFiltradas.length === 0 ? (
-        <EmptyState mensagem="Nenhuma matéria-prima encontrada com esse filtro." />
+        <EmptyState mensagem={filtroAtivo ? "Nenhuma matéria-prima encontrada com esse filtro." : "Nenhuma matéria-prima cadastrada ainda."} />
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-base">
-            <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
-              <tr>
-                {cabecalho("nome", "Nome")}
-                {cabecalho("unidadeMedida", "Unidade")}
-                {cabecalho("custoUnitario", "Custo unitário")}
-                {cabecalho("estoqueAtual", "Estoque")}
-                <th className="px-5 py-4"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {materiasPrimasOrdenadas.map((mp) => {
-                const estoqueBaixo = mp.estoqueAtual <= mp.estoqueMinimo;
-                const referencia = Math.max(mp.estoqueMinimo * 3, 1);
-                const pctBarra = Math.max(6, Math.min(100, (mp.estoqueAtual / referencia) * 100));
-                return (
-                  <tr key={mp.id} className="border-b border-hairline last:border-0">
-                    <td className="px-5 py-4 font-medium text-ink">
-                      <Link href={`/estoque/materias-primas/${mp.id}`} className="hover:underline">
-                        {mp.nome}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-4 text-ink-secondary">{mp.unidadeMedida}</td>
-                    <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(mp.custoUnitario)}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-hairline">
-                            <span
-                              className={`block h-full rounded-full ${estoqueBaixo ? "bg-warning" : "bg-good"}`}
-                              style={{ width: `${pctBarra}%` }}
-                            />
+        <>
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full text-base">
+              <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                <tr>
+                  {cabecalho("nome", "Nome")}
+                  {cabecalho("unidadeMedida", "Unidade")}
+                  {cabecalho("custoUnitario", "Custo unitário")}
+                  {cabecalho("estoqueAtual", "Estoque")}
+                  <th className="px-5 py-4"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {materiasPrimas.map((mp) => {
+                  const estoqueBaixo = mp.estoqueAtual <= mp.estoqueMinimo;
+                  const referencia = Math.max(mp.estoqueMinimo * 3, 1);
+                  const pctBarra = Math.max(6, Math.min(100, (mp.estoqueAtual / referencia) * 100));
+                  return (
+                    <tr key={mp.id} className="border-b border-hairline last:border-0">
+                      <td className="px-5 py-4 font-medium text-ink">
+                        <Link href={`/estoque/materias-primas/${mp.id}`} className="hover:underline">
+                          {mp.nome}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-4 text-ink-secondary">{mp.unidadeMedida}</td>
+                      <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(mp.custoUnitario)}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-hairline">
+                              <span
+                                className={`block h-full rounded-full ${estoqueBaixo ? "bg-warning" : "bg-good"}`}
+                                style={{ width: `${pctBarra}%` }}
+                              />
+                            </div>
+                            {estoqueBaixo && (
+                              <Badge tone="warning">
+                                <span className="flex items-center gap-1">
+                                  <IconAlertTriangle className="h-3 w-3" strokeWidth={2.4} />
+                                  baixo
+                                </span>
+                              </Badge>
+                            )}
                           </div>
-                          {estoqueBaixo && (
-                            <Badge tone="warning">
-                              <span className="flex items-center gap-1">
-                                <IconAlertTriangle className="h-3 w-3" strokeWidth={2.4} />
-                                baixo
-                              </span>
-                            </Badge>
-                          )}
+                          <span className="text-sm text-ink-secondary tabular-figures">
+                            {mp.estoqueAtual} {mp.unidadeMedida}
+                          </span>
                         </div>
-                        <span className="text-sm text-ink-secondary tabular-figures">
-                          {mp.estoqueAtual} {mp.unidadeMedida}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <Link href={`/estoque/materias-primas/${mp.id}`} className="mr-3 text-ink-secondary hover:underline">
-                        Ver
-                      </Link>
-                      <button onClick={() => excluir(mp)} className="text-critical hover:underline">
-                        Excluir
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <Link href={`/estoque/materias-primas/${mp.id}`} className="mr-3 text-ink-secondary hover:underline">
+                          Ver
+                        </Link>
+                        <button onClick={() => excluir(mp)} className="text-critical hover:underline">
+                          Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+          {resultado && (
+            <Paginacao
+              pagina={resultado.pagina}
+              totalPaginas={resultado.totalPaginas}
+              totalElementos={resultado.totalElementos}
+              tamanho={resultado.tamanho}
+              onMudarPagina={buscar}
+            />
+          )}
+        </>
       )}
     </main>
   );
