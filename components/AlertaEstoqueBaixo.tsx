@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, ApiError } from "@/lib/api";
-import { MateriaPrimaResponse, ProdutoResponse } from "@/types/estoque";
+import { ApiError } from "@/lib/api";
+import { buscarItensEstoqueBaixo, ItemEstoqueBaixo as ItemEstoqueBaixoBase } from "@/lib/estoque";
 import { IconAlertTriangle, IconX } from "@/components/Icon";
 
 const CHAVE_LOCALSTORAGE = "arte-criativa:alerta-estoque";
@@ -15,16 +15,8 @@ interface RegistroItem {
   dispensadoPermanentemente: boolean;
 }
 
-interface ItemEstoqueBaixo {
-  chave: string;
-  tipo: "produto" | "materia-prima";
-  id: number;
-  nome: string;
-  estoqueAtual: number;
-  estoqueMinimo: number;
-  unidade: string;
+interface ItemEstoqueBaixo extends ItemEstoqueBaixoBase {
   vezesMostrado: number;
-  href: string;
 }
 
 function lerRegistros(): Record<string, RegistroItem> {
@@ -63,38 +55,8 @@ export function AlertaEstoqueBaixo() {
 
     async function carregar() {
       try {
-        const [produtos, materiasPrimas] = await Promise.all([
-          api.get<ProdutoResponse[]>("/produtos"),
-          api.get<MateriaPrimaResponse[]>("/materias-primas"),
-        ]);
+        const baixos = await buscarItensEstoqueBaixo();
         if (cancelado) return;
-
-        const baixos: Omit<ItemEstoqueBaixo, "vezesMostrado">[] = [
-          ...produtos
-            .filter((p) => p.ativo && p.estoqueAtual <= p.estoqueMinimo)
-            .map((p) => ({
-              chave: `produto:${p.id}`,
-              tipo: "produto" as const,
-              id: p.id,
-              nome: p.nome,
-              estoqueAtual: p.estoqueAtual,
-              estoqueMinimo: p.estoqueMinimo,
-              unidade: "un.",
-              href: `/estoque/produtos/${p.id}`,
-            })),
-          ...materiasPrimas
-            .filter((mp) => mp.estoqueAtual <= mp.estoqueMinimo)
-            .map((mp) => ({
-              chave: `materia-prima:${mp.id}`,
-              tipo: "materia-prima" as const,
-              id: mp.id,
-              nome: mp.nome,
-              estoqueAtual: mp.estoqueAtual,
-              estoqueMinimo: mp.estoqueMinimo,
-              unidade: mp.unidadeMedida,
-              href: `/estoque/materias-primas/${mp.id}`,
-            })),
-        ];
 
         const registros = lerRegistros();
         const chavesAtuais = new Set(baixos.map((item) => item.chave));
