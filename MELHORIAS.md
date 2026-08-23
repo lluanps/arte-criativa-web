@@ -11,7 +11,7 @@ Backlog de ideias levantadas em 2026-08-23, pra não perder o fio enquanto imple
 
 ## Médias
 
-- [ ] **🔧 Dashboard na Home** — troca a grade de links por números de verdade: saldo do mês, contas a vencer/atrasadas, estoque baixo, vendas do dia/mês. Reaproveita `DashboardFinanceiroResponse` (já usado em `/financeiro`) e a lógica do `AlertaEstoqueBaixo`.
+- [x] **Dashboard na Home** — troca a grade de links por números de verdade: saldo do mês, contas a vencer/atrasadas, estoque baixo, vendas do mês. Reaproveita `DashboardFinanceiroResponse` (já usado em `/financeiro`) e a lógica do `AlertaEstoqueBaixo` (extraída pra `lib/estoque.ts`).
 - [ ] **Encomendas com status e prazo (Vendas)** — status do pedido (pendente → em produção → pronto → entregue), data de entrega combinada, agenda/calendário de entregas, e sinal/pagamento parcial.
 - [ ] **"Quanto dá pra produzir com o estoque atual"** — pra cada ficha técnica, usando o consumo por unidade já presente em `ReceitaResponse`, calcular quantas unidades dá pra fazer com a matéria-prima em estoque hoje (o item mais escasso limita). Ajuda a planejar produção e a priorizar compra sem abrir calculadora.
 - [ ] **Conta recorrente, não só parcelada** — parcelamento cobre "N vezes e acaba" (ex: máquina em 3x). Não cobre conta fixa mensal indefinida (aluguel, internet), que hoje precisa recriar toda vez. Um "repetir todo mês até eu cancelar" resolve.
