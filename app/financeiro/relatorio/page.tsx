@@ -32,6 +32,7 @@ interface GrupoParcelamento {
   pagas: number;
   valorPago: number;
   valorTotal: number;
+  valorRestante: number;
   proximaPendente: ContaResponse | null;
 }
 
@@ -62,14 +63,17 @@ function agruparParcelamentos(contas: ContaResponse[]): GrupoParcelamento[] {
     const pagas = parcelas.filter((p) => p.status === "PAGO");
     if (pagas.length === parcelas.length) continue; // já terminou, não mostra
     const pendentes = parcelas.filter((p) => p.status !== "PAGO");
+    const valorPago = pagas.reduce((soma, p) => soma + p.valor, 0);
+    const valorTotal = parcelas.reduce((soma, p) => soma + p.valor, 0);
     grupos.push({
       grupoId,
       tipo: parcelas[0].tipo,
       descricao: descricaoBase(parcelas[0].descricao),
       parcelas,
       pagas: pagas.length,
-      valorPago: pagas.reduce((soma, p) => soma + p.valor, 0),
-      valorTotal: parcelas.reduce((soma, p) => soma + p.valor, 0),
+      valorPago,
+      valorTotal,
+      valorRestante: valorTotal - valorPago,
       proximaPendente: pendentes.sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0] ?? null,
     });
   }
@@ -90,7 +94,11 @@ function exportarCsv(params: {
   fim: string;
   totalReceitas: number;
   totalDespesas: number;
-  categorias: LinhaCategoria[];
+  despesasPorCategoria: LinhaCategoria[];
+  receitasPorCategoria: LinhaCategoria[];
+  maioresDespesas: LancamentoFinanceiroResponse[];
+  maioresReceitas: LancamentoFinanceiroResponse[];
+  lancamentos: LancamentoFinanceiroResponse[];
   parcelamentos: GrupoParcelamento[];
   futuras: ContaResponse[];
 }) {
@@ -102,17 +110,45 @@ function exportarCsv(params: {
   linhas.push(`Despesas;${params.totalDespesas.toFixed(2).replace(".", ",")}`);
   linhas.push(`Saldo;${(params.totalReceitas - params.totalDespesas).toFixed(2).replace(".", ",")}`);
   linhas.push("");
-  linhas.push("Detalhamento por categoria");
-  linhas.push("Tipo;Categoria;Total (R$)");
-  for (const c of params.categorias) {
-    linhas.push(`${c.tipo === "RECEITA" ? "Receita" : "Despesa"};${c.categoria};${c.total.toFixed(2).replace(".", ",")}`);
+  linhas.push("Despesas por categoria");
+  linhas.push("Categoria;Total (R$);% das despesas");
+  for (const c of params.despesasPorCategoria) {
+    const pct = params.totalDespesas > 0 ? `${((c.total / params.totalDespesas) * 100).toFixed(1)}%` : "—";
+    linhas.push(`${c.categoria};${c.total.toFixed(2).replace(".", ",")};${pct}`);
+  }
+  linhas.push("");
+  linhas.push("Receitas por categoria");
+  linhas.push("Categoria;Total (R$);% das receitas");
+  for (const c of params.receitasPorCategoria) {
+    const pct = params.totalReceitas > 0 ? `${((c.total / params.totalReceitas) * 100).toFixed(1)}%` : "—";
+    linhas.push(`${c.categoria};${c.total.toFixed(2).replace(".", ",")};${pct}`);
+  }
+  linhas.push("");
+  linhas.push("Maiores despesas do período");
+  linhas.push("Data;Categoria;Descrição;Valor (R$)");
+  for (const l of params.maioresDespesas) {
+    linhas.push(`${formatarData(l.dataLancamento)};${l.categoria};${l.descricao ?? "—"};${l.valor.toFixed(2).replace(".", ",")}`);
+  }
+  linhas.push("");
+  linhas.push("Maiores receitas do período");
+  linhas.push("Data;Categoria;Descrição;Valor (R$)");
+  for (const l of params.maioresReceitas) {
+    linhas.push(`${formatarData(l.dataLancamento)};${l.categoria};${l.descricao ?? "—"};${l.valor.toFixed(2).replace(".", ",")}`);
+  }
+  linhas.push("");
+  linhas.push("Lançamentos detalhados do período");
+  linhas.push("Data;Tipo;Categoria;Descrição;Valor (R$)");
+  for (const l of params.lancamentos) {
+    linhas.push(
+      `${formatarData(l.dataLancamento)};${l.tipo === "RECEITA" ? "Receita" : "Despesa"};${l.categoria};${l.descricao ?? "—"};${l.valor.toFixed(2).replace(".", ",")}`
+    );
   }
   linhas.push("");
   linhas.push("Parcelamentos em andamento");
-  linhas.push("Descrição;Tipo;Parcelas pagas;Valor pago (R$);Valor total (R$);Próxima parcela");
+  linhas.push("Descrição;Tipo;Parcelas pagas;Valor pago (R$);Valor restante (R$);Valor total (R$);Próxima parcela");
   for (const g of params.parcelamentos) {
     linhas.push(
-      `${g.descricao};${g.tipo === "PAGAR" ? "A pagar" : "A receber"};${g.pagas}/${g.parcelas.length};${g.valorPago.toFixed(2).replace(".", ",")};${g.valorTotal.toFixed(2).replace(".", ",")};${g.proximaPendente ? formatarData(g.proximaPendente.vencimento) : "—"}`
+      `${g.descricao};${g.tipo === "PAGAR" ? "A pagar" : "A receber"};${g.pagas}/${g.parcelas.length};${g.valorPago.toFixed(2).replace(".", ",")};${g.valorRestante.toFixed(2).replace(".", ",")};${g.valorTotal.toFixed(2).replace(".", ",")};${g.proximaPendente ? formatarData(g.proximaPendente.vencimento) : "—"}`
     );
   }
   linhas.push("");
@@ -137,13 +173,32 @@ async function exportarPdf(params: {
   fim: string;
   totalReceitas: number;
   totalDespesas: number;
-  categorias: LinhaCategoria[];
+  despesasPorCategoria: LinhaCategoria[];
+  receitasPorCategoria: LinhaCategoria[];
+  maioresDespesas: LancamentoFinanceiroResponse[];
+  maioresReceitas: LancamentoFinanceiroResponse[];
+  lancamentos: LancamentoFinanceiroResponse[];
   parcelamentos: GrupoParcelamento[];
   futuras: ContaResponse[];
 }) {
   const [{ default: jsPDF }, { autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
 
   const doc = new jsPDF();
+  const proximaTabela = () => {
+    // @ts-expect-error -- lastAutoTable é injetado pelo plugin, sem tipo próprio
+    return doc.lastAutoTable.finalY + 10;
+  };
+  const novaSecao = (titulo: string, y: number) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFontSize(11);
+    doc.setTextColor(30);
+    doc.text(titulo, 14, y);
+    return y + 4;
+  };
+
   doc.setFontSize(16);
   doc.text("Arte Criativa", 14, 17);
   doc.setFontSize(12);
@@ -161,50 +216,106 @@ async function exportarPdf(params: {
     39
   );
 
-  let y = 46;
-
+  let y = novaSecao("Despesas por categoria", 46);
   autoTable(doc, {
     startY: y,
-    head: [["Categoria por período", "Tipo", "Total"]],
-    body: params.categorias.map((c) => [c.categoria, c.tipo === "RECEITA" ? "Receita" : "Despesa", formatarMoeda(c.total)]),
+    head: [["Categoria", "Total", "% das despesas"]],
+    body: params.despesasPorCategoria.map((c) => [
+      c.categoria,
+      formatarMoeda(c.total),
+      params.totalDespesas > 0 ? `${((c.total / params.totalDespesas) * 100).toFixed(1)}%` : "—",
+    ]),
     headStyles: { fillColor: [90, 74, 58] },
     margin: { top: y },
   });
-  // @ts-expect-error -- lastAutoTable é injetado pelo plugin, sem tipo próprio
-  y = doc.lastAutoTable.finalY + 10;
+  y = proximaTabela();
+
+  if (params.receitasPorCategoria.length > 0) {
+    y = novaSecao("Receitas por categoria", y);
+    autoTable(doc, {
+      startY: y,
+      head: [["Categoria", "Total", "% das receitas"]],
+      body: params.receitasPorCategoria.map((c) => [
+        c.categoria,
+        formatarMoeda(c.total),
+        params.totalReceitas > 0 ? `${((c.total / params.totalReceitas) * 100).toFixed(1)}%` : "—",
+      ]),
+      headStyles: { fillColor: [90, 74, 58] },
+      margin: { top: y },
+    });
+    y = proximaTabela();
+  }
+
+  if (params.maioresDespesas.length > 0) {
+    y = novaSecao("Maiores despesas do período", y);
+    autoTable(doc, {
+      startY: y,
+      head: [["Data", "Categoria", "Descrição", "Valor"]],
+      body: params.maioresDespesas.map((l) => [formatarData(l.dataLancamento), l.categoria, l.descricao ?? "—", formatarMoeda(l.valor)]),
+      headStyles: { fillColor: [90, 74, 58] },
+      margin: { top: y },
+    });
+    y = proximaTabela();
+  }
+
+  if (params.maioresReceitas.length > 0) {
+    y = novaSecao("Maiores receitas do período", y);
+    autoTable(doc, {
+      startY: y,
+      head: [["Data", "Categoria", "Descrição", "Valor"]],
+      body: params.maioresReceitas.map((l) => [formatarData(l.dataLancamento), l.categoria, l.descricao ?? "—", formatarMoeda(l.valor)]),
+      headStyles: { fillColor: [90, 74, 58] },
+      margin: { top: y },
+    });
+    y = proximaTabela();
+  }
 
   if (params.parcelamentos.length > 0) {
-    doc.setFontSize(11);
-    doc.setTextColor(30);
-    doc.text("Parcelamentos em andamento", 14, y);
+    y = novaSecao("Parcelamentos em andamento", y);
     autoTable(doc, {
-      startY: y + 4,
-      head: [["Descrição", "Tipo", "Pagas", "Pago", "Total", "Próxima"]],
+      startY: y,
+      head: [["Descrição", "Tipo", "Pagas", "Pago", "Restante", "Total", "Próxima"]],
       body: params.parcelamentos.map((g) => [
         g.descricao,
         g.tipo === "PAGAR" ? "A pagar" : "A receber",
         `${g.pagas}/${g.parcelas.length}`,
         formatarMoeda(g.valorPago),
+        formatarMoeda(g.valorRestante),
         formatarMoeda(g.valorTotal),
         g.proximaPendente ? formatarData(g.proximaPendente.vencimento) : "—",
       ]),
       headStyles: { fillColor: [90, 74, 58] },
-      margin: { top: y + 4 },
+      margin: { top: y },
     });
-    // @ts-expect-error -- lastAutoTable é injetado pelo plugin, sem tipo próprio
-    y = doc.lastAutoTable.finalY + 10;
+    y = proximaTabela();
   }
 
   if (params.futuras.length > 0) {
-    doc.setFontSize(11);
-    doc.setTextColor(30);
-    doc.text("Futuro (contas a vencer)", 14, y);
+    y = novaSecao("Futuro (contas a vencer)", y);
     autoTable(doc, {
-      startY: y + 4,
+      startY: y,
       head: [["Vencimento", "Tipo", "Descrição", "Valor"]],
       body: params.futuras.map((c) => [formatarData(c.vencimento), c.tipo === "PAGAR" ? "A pagar" : "A receber", c.descricao, formatarMoeda(c.valor)]),
       headStyles: { fillColor: [90, 74, 58] },
-      margin: { top: y + 4 },
+      margin: { top: y },
+    });
+    y = proximaTabela();
+  }
+
+  if (params.lancamentos.length > 0) {
+    y = novaSecao("Lançamentos detalhados do período", y);
+    autoTable(doc, {
+      startY: y,
+      head: [["Data", "Tipo", "Categoria", "Descrição", "Valor"]],
+      body: params.lancamentos.map((l) => [
+        formatarData(l.dataLancamento),
+        l.tipo === "RECEITA" ? "Receita" : "Despesa",
+        l.categoria,
+        l.descricao ?? "—",
+        formatarMoeda(l.valor),
+      ]),
+      headStyles: { fillColor: [90, 74, 58] },
+      margin: { top: y },
     });
   }
 
@@ -248,13 +359,39 @@ export default function RelatorioFinanceiroPage() {
   const totalReceitas = useMemo(() => lancamentos.filter((l) => l.tipo === "RECEITA").reduce((s, l) => s + l.valor, 0), [lancamentos]);
   const totalDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "DESPESA").reduce((s, l) => s + l.valor, 0), [lancamentos]);
   const categorias = useMemo(() => agruparPorCategoria(lancamentos), [lancamentos]);
+  const despesasPorCategoria = useMemo(() => categorias.filter((c) => c.tipo === "DESPESA"), [categorias]);
+  const receitasPorCategoria = useMemo(() => categorias.filter((c) => c.tipo === "RECEITA"), [categorias]);
+  const maioresDespesas = useMemo(
+    () => [...lancamentos].filter((l) => l.tipo === "DESPESA").sort((a, b) => b.valor - a.valor).slice(0, 5),
+    [lancamentos]
+  );
+  const maioresReceitas = useMemo(
+    () => [...lancamentos].filter((l) => l.tipo === "RECEITA").sort((a, b) => b.valor - a.valor).slice(0, 5),
+    [lancamentos]
+  );
+  const lancamentosOrdenados = useMemo(
+    () => [...lancamentos].sort((a, b) => b.dataLancamento.localeCompare(a.dataLancamento)),
+    [lancamentos]
+  );
   const parcelamentos = useMemo(() => agruparParcelamentos(contas), [contas]);
   const contasFuturas = useMemo(() => futuras(contas), [contas]);
 
   const totalFuturoPagar = contasFuturas.filter((c) => c.tipo === "PAGAR").reduce((s, c) => s + c.valor, 0);
   const totalFuturoReceber = contasFuturas.filter((c) => c.tipo === "RECEBER").reduce((s, c) => s + c.valor, 0);
 
-  const exportParams = { inicio, fim, totalReceitas, totalDespesas, categorias, parcelamentos, futuras: contasFuturas };
+  const exportParams = {
+    inicio,
+    fim,
+    totalReceitas,
+    totalDespesas,
+    despesasPorCategoria,
+    receitasPorCategoria,
+    maioresDespesas,
+    maioresReceitas,
+    lancamentos: lancamentosOrdenados,
+    parcelamentos,
+    futuras: contasFuturas,
+  };
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -326,37 +463,157 @@ export default function RelatorioFinanceiroPage() {
             </div>
           </section>
 
+          <section className="grid gap-8 lg:grid-cols-2">
+            <div>
+              <h2 className="mb-3 text-lg font-semibold text-ink">Despesas por categoria</h2>
+              {despesasPorCategoria.length === 0 ? (
+                <EmptyState mensagem="Nenhuma despesa no período selecionado." />
+              ) : (
+                <Card className="overflow-x-auto p-0">
+                  <table className="w-full text-base">
+                    <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                      <tr>
+                        <th className="px-5 py-4">Categoria</th>
+                        <th className="px-5 py-4">Total</th>
+                        <th className="px-5 py-4">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {despesasPorCategoria.map((c) => (
+                        <tr key={c.categoria} className="border-b border-hairline last:border-0">
+                          <td className="px-5 py-4 font-medium text-ink">{c.categoria}</td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(c.total)}</td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">
+                            {totalDespesas > 0 ? `${((c.total / totalDespesas) * 100).toFixed(1)}%` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+              )}
+            </div>
+
+            <div>
+              <h2 className="mb-3 text-lg font-semibold text-ink">Receitas por categoria</h2>
+              {receitasPorCategoria.length === 0 ? (
+                <EmptyState mensagem="Nenhuma receita no período selecionado." />
+              ) : (
+                <Card className="overflow-x-auto p-0">
+                  <table className="w-full text-base">
+                    <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                      <tr>
+                        <th className="px-5 py-4">Categoria</th>
+                        <th className="px-5 py-4">Total</th>
+                        <th className="px-5 py-4">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {receitasPorCategoria.map((c) => (
+                        <tr key={c.categoria} className="border-b border-hairline last:border-0">
+                          <td className="px-5 py-4 font-medium text-ink">{c.categoria}</td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(c.total)}</td>
+                          <td className="px-5 py-4 text-ink-secondary tabular-figures">
+                            {totalReceitas > 0 ? `${((c.total / totalReceitas) * 100).toFixed(1)}%` : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+              )}
+            </div>
+          </section>
+
+          {(maioresDespesas.length > 0 || maioresReceitas.length > 0) && (
+            <section className="grid gap-8 lg:grid-cols-2">
+              {maioresDespesas.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-lg font-semibold text-ink">Maiores despesas do período</h2>
+                  <Card className="overflow-x-auto p-0">
+                    <table className="w-full text-base">
+                      <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                        <tr>
+                          <th className="px-5 py-4">Data</th>
+                          <th className="px-5 py-4">Categoria</th>
+                          <th className="px-5 py-4">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {maioresDespesas.map((l) => (
+                          <tr key={l.id} className="border-b border-hairline last:border-0">
+                            <td className="px-5 py-4 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
+                            <td className="px-5 py-4 font-medium text-ink">{l.descricao ?? l.categoria}</td>
+                            <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(l.valor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </Card>
+                </div>
+              )}
+
+              {maioresReceitas.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-lg font-semibold text-ink">Maiores receitas do período</h2>
+                  <Card className="overflow-x-auto p-0">
+                    <table className="w-full text-base">
+                      <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                        <tr>
+                          <th className="px-5 py-4">Data</th>
+                          <th className="px-5 py-4">Categoria</th>
+                          <th className="px-5 py-4">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {maioresReceitas.map((l) => (
+                          <tr key={l.id} className="border-b border-hairline last:border-0">
+                            <td className="px-5 py-4 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
+                            <td className="px-5 py-4 font-medium text-ink">{l.descricao ?? l.categoria}</td>
+                            <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(l.valor)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </Card>
+                </div>
+              )}
+            </section>
+          )}
+
           <section>
-            <h2 className="mb-3 text-lg font-semibold text-ink">Detalhamento por categoria</h2>
-            {categorias.length === 0 ? (
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-ink">Lançamentos detalhados do período</h2>
+              <Link href="/financeiro/lancamentos" className="text-sm text-ink-secondary hover:underline">
+                Ver lançamentos ↗
+              </Link>
+            </div>
+            {lancamentosOrdenados.length === 0 ? (
               <EmptyState mensagem="Nenhum lançamento no período selecionado." />
             ) : (
-              <Card className="overflow-x-auto p-0">
+              <Card className="max-h-[28rem] overflow-y-auto overflow-x-auto p-0">
                 <table className="w-full text-base">
-                  <thead className="border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
+                  <thead className="sticky top-0 border-b border-hairline bg-surface-hover text-left text-sm uppercase text-ink-secondary">
                     <tr>
-                      <th className="px-5 py-4">Categoria</th>
+                      <th className="px-5 py-4">Data</th>
                       <th className="px-5 py-4">Tipo</th>
-                      <th className="px-5 py-4">Total</th>
-                      <th className="px-5 py-4">% do tipo</th>
+                      <th className="px-5 py-4">Categoria</th>
+                      <th className="px-5 py-4">Descrição</th>
+                      <th className="px-5 py-4">Valor</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {categorias.map((c) => {
-                      const totalDoTipo = c.tipo === "RECEITA" ? totalReceitas : totalDespesas;
-                      return (
-                        <tr key={`${c.tipo}::${c.categoria}`} className="border-b border-hairline last:border-0">
-                          <td className="px-5 py-4 font-medium text-ink">{c.categoria}</td>
-                          <td className="px-5 py-4">
-                            <Badge tone={c.tipo === "RECEITA" ? "success" : "danger"}>{c.tipo === "RECEITA" ? "Receita" : "Despesa"}</Badge>
-                          </td>
-                          <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(c.total)}</td>
-                          <td className="px-5 py-4 text-ink-secondary tabular-figures">
-                            {totalDoTipo > 0 ? `${((c.total / totalDoTipo) * 100).toFixed(1)}%` : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {lancamentosOrdenados.map((l) => (
+                      <tr key={l.id} className="border-b border-hairline last:border-0">
+                        <td className="px-5 py-4 text-ink-secondary">{formatarData(l.dataLancamento)}</td>
+                        <td className="px-5 py-4">
+                          <Badge tone={l.tipo === "RECEITA" ? "success" : "danger"}>{l.tipo === "RECEITA" ? "Receita" : "Despesa"}</Badge>
+                        </td>
+                        <td className="px-5 py-4 text-ink-secondary">{l.categoria}</td>
+                        <td className="px-5 py-4 font-medium text-ink">{l.descricao ?? "—"}</td>
+                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(l.valor)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </Card>
@@ -384,6 +641,7 @@ export default function RelatorioFinanceiroPage() {
                       <th className="px-5 py-4">Tipo</th>
                       <th className="px-5 py-4">Progresso</th>
                       <th className="px-5 py-4">Recebido/pago até agora</th>
+                      <th className="px-5 py-4">Restante</th>
                       <th className="px-5 py-4">Próxima parcela</th>
                     </tr>
                   </thead>
@@ -400,6 +658,7 @@ export default function RelatorioFinanceiroPage() {
                         <td className="px-5 py-4 text-ink-secondary tabular-figures">
                           {formatarMoeda(g.valorPago)} de {formatarMoeda(g.valorTotal)}
                         </td>
+                        <td className="px-5 py-4 text-ink-secondary tabular-figures">{formatarMoeda(g.valorRestante)}</td>
                         <td className="px-5 py-4 text-ink-secondary">
                           {g.proximaPendente ? formatarData(g.proximaPendente.vencimento) : "—"}
                         </td>
