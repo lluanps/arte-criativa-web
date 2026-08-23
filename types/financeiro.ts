@@ -23,11 +23,25 @@ export interface LancamentoFinanceiroResponse {
   criadoEm: string;
 }
 
+/** Um item de matéria-prima comprado dentro de uma conta a pagar (ver
+ * ItemMateriaPrimaCompra no backend). `materiaPrimaNome` só vem preenchido no
+ * Response — no Request só o id importa, o backend resolve o nome sozinho. */
+export interface ItemMateriaPrimaCompra {
+  materiaPrimaId: number;
+  materiaPrimaNome?: string;
+  quantidade: number;
+  valor: number;
+}
+
 export interface ContaRequest {
   tipo: TipoConta;
   descricao: string;
   valor: number;
   vencimento: string;
+  /** Só em contas PAGAR: marca a conta como "compra de matéria-prima" e já dá
+   * entrada no estoque de cada item. A soma dos itens precisa bater com `valor`
+   * (o backend rejeita com 422 se não bater). */
+  itensMateriaPrima?: ItemMateriaPrimaCompra[];
 }
 
 /** Registra uma conta parcelada de uma vez: o backend gera `quantidadeParcelas`
@@ -39,6 +53,8 @@ export interface ContaParceladaRequest {
   valorTotal: number;
   quantidadeParcelas: number;
   primeiroVencimento: string;
+  /** Ver ContaRequest.itensMateriaPrima — soma dos itens compara contra `valorTotal`. */
+  itensMateriaPrima?: ItemMateriaPrimaCompra[];
 }
 
 export interface ContaResponse {
@@ -54,6 +70,9 @@ export interface ContaResponse {
   numeroParcela: number | null;
   totalParcelas: number | null;
   criadoEm: string;
+  /** Vazio/ausente = conta comum. Não vazio = essa conta é uma compra de matéria-prima
+   * (já deu entrada no estoque); não dá pra editar o valor dessas contas depois. */
+  itensMateriaPrima?: ItemMateriaPrimaCompra[];
 }
 
 export interface DashboardFinanceiroResponse {

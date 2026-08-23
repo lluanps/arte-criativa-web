@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { dataLocalISO, formatarData, formatarMoeda } from "@/lib/format";
-import { ContaParceladaRequest, ContaRequest, ContaResponse, StatusConta, TipoConta } from "@/types/financeiro";
+import {
+  ContaParceladaRequest,
+  ContaRequest,
+  ContaResponse,
+  ItemMateriaPrimaCompra,
+  StatusConta,
+  TipoConta,
+} from "@/types/financeiro";
+import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse } from "@/types/estoque";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 
@@ -19,6 +27,18 @@ const LABEL_STATUS: Record<StatusConta, string> = {
   PAGO: "Pago",
   ATRASADO: "Atrasado",
 };
+
+interface LinhaItemCompra {
+  materiaPrimaId: number | "";
+  quantidade: number;
+  valor: number;
+}
+
+const LINHA_ITEM_COMPRA_VAZIA: LinhaItemCompra = { materiaPrimaId: "", quantidade: 0, valor: 0 };
+
+/** Diferença de até 1 centavo é tolerada (arredondamento) — abaixo disso considera
+ * que a soma dos itens bate com o valor da conta. */
+const TOLERANCIA_SOMA = 0.01;
 
 export default function ContasPage() {
   const perguntar = useConfirm();
@@ -37,6 +57,19 @@ export default function ContasPage() {
   const [quantidadeParcelas, setQuantidadeParcelas] = useState(2);
   const [salvando, setSalvando] = useState(false);
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
+
+  // Compra de matéria-prima vinculada à conta — só entra na criação (tipo PAGAR);
+  // editar não mexe nos itens, só trava o valor (ver valorTravado).
+  const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrimaResponse[]>([]);
+  const [compraMateriaPrima, setCompraMateriaPrima] = useState(false);
+  const [itensCompra, setItensCompra] = useState<LinhaItemCompra[]>([{ ...LINHA_ITEM_COMPRA_VAZIA }]);
+  const [valorTravado, setValorTravado] = useState(false);
+
+  const materiasPrimasAgrupadas = useMemo(() => agruparMateriaPrimaPorCategoria(materiasPrimas), [materiasPrimas]);
+  const somaItensCompra = useMemo(() => itensCompra.reduce((soma, l) => soma + (Number(l.valor) || 0), 0), [itensCompra]);
+  const itensCompraCompletos = itensCompra.length > 0 && itensCompra.every((l) => l.materiaPrimaId !== "" && l.quantidade > 0 && l.valor > 0);
+  const somaCompraBate = Math.abs(somaItensCompra - valor) < TOLERANCIA_SOMA;
+  const compraValida = !compraMateriaPrima || (itensCompraCompletos && somaCompraBate);
 
   async function carregar(tipoFiltro = filtroTipo) {
     setCarregando(true);
@@ -57,6 +90,16 @@ export default function ContasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    api
+      .get<MateriaPrimaResponse[]>("/materias-primas")
+      .then(setMateriasPrimas)
+      .catch(() => {
+        // Só usada pro seletor de itens de compra — se falhar, o checkbox de compra de
+        // matéria-prima fica sem opção pra escolher, mas o resto da tela segue normal.
+      });
+  }, []);
+
   function mudarFiltro(novoTipo: TipoConta | "") {
     setFiltroTipo(novoTipo);
     carregar(novoTipo);
@@ -72,6 +115,9 @@ export default function ContasPage() {
     setMostrarForm(false);
     setEditandoId(null);
     setErrosCampos({});
+    setCompraMateriaPrima(false);
+    setItensCompra([{ ...LINHA_ITEM_COMPRA_VAZIA }]);
+    setValorTravado(false);
   }
 
   function iniciarEdicao(conta: ContaResponse) {
@@ -83,12 +129,47 @@ export default function ContasPage() {
     setParcelado(false);
     setMostrarForm(true);
     setErrosCampos({});
+    setCompraMateriaPrima(false);
+    setItensCompra([{ ...LINHA_ITEM_COMPRA_VAZIA }]);
+    setValorTravado((conta.itensMateriaPrima?.length ?? 0) > 0);
+  }
+
+  function atualizarLinhaCompra(index: number, patch: Partial<LinhaItemCompra>) {
+    setItensCompra((atual) => atual.map((linha, i) => (i === index ? { ...linha, ...patch } : linha)));
+  }
+
+  function removerLinhaCompra(index: number) {
+    setItensCompra((atual) => atual.filter((_, i) => i !== index));
+  }
+
+  /** "Cera de abelha 5kg, Pavio 20un" — unidade vem batendo o id com a lista de
+   * matérias-primas já carregada (a resposta da conta não traz unidade, só nome). */
+  function formatarItensCompra(itens: ItemMateriaPrimaCompra[]): string {
+    return itens
+      .map((item) => {
+        const unidade = materiasPrimas.find((mp) => mp.id === item.materiaPrimaId)?.unidadeMedida ?? "";
+        return `${item.materiaPrimaNome ?? "?"} ${item.quantidade}${unidade}`;
+      })
+      .join(", ");
   }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setErrosCampos({});
+
+    if (editandoId === null && compraMateriaPrima && !compraValida) {
+      setErro("Confira os itens da compra: todos precisam de matéria-prima, quantidade e valor, e a soma tem que bater com o valor da conta.");
+      return;
+    }
+
+    const itensMateriaPrima: ItemMateriaPrimaCompra[] | undefined =
+      editandoId === null && compraMateriaPrima
+        ? itensCompra
+            .filter((l): l is LinhaItemCompra & { materiaPrimaId: number } => l.materiaPrimaId !== "")
+            .map((l) => ({ materiaPrimaId: l.materiaPrimaId, quantidade: l.quantidade, valor: l.valor }))
+        : undefined;
+
     setSalvando(true);
     try {
       if (editandoId !== null) {
@@ -101,10 +182,11 @@ export default function ContasPage() {
           valorTotal: valor,
           quantidadeParcelas,
           primeiroVencimento: vencimento,
+          itensMateriaPrima,
         };
         await api.post("/contas/parceladas", request);
       } else {
-        const request: ContaRequest = { tipo, descricao, valor, vencimento };
+        const request: ContaRequest = { tipo, descricao, valor, vencimento, itensMateriaPrima };
         await api.post("/contas", request);
       }
       resetarForm();
@@ -173,7 +255,17 @@ export default function ContasPage() {
           <form onSubmit={salvar} className="grid gap-5 sm:grid-cols-2">
             <div>
               <Label htmlFor="tipo">Tipo</Label>
-              <Select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoConta)}>
+              <Select
+                id="tipo"
+                value={tipo}
+                onChange={(e) => {
+                  const novoTipo = e.target.value as TipoConta;
+                  setTipo(novoTipo);
+                  // Compra de matéria-prima só existe em conta a pagar — trocar pra
+                  // "a receber" com o checkbox marcado não devia sobreviver escondido.
+                  if (novoTipo !== "PAGAR") setCompraMateriaPrima(false);
+                }}
+              >
                 <option value="PAGAR">A pagar</option>
                 <option value="RECEBER">A receber</option>
               </Select>
@@ -196,11 +288,18 @@ export default function ContasPage() {
                 step="0.01"
                 min="0"
                 required
+                disabled={valorTravado}
+                title={valorTravado ? "Não dá pra editar o valor de uma conta vinculada a compra de matéria-prima — exclua e crie de novo." : undefined}
                 value={valor}
                 onChange={(e) => setValor(Number(e.target.value))}
               />
               {errosCampos.valor && <p className="mt-1 text-sm text-critical">{errosCampos.valor}</p>}
               {errosCampos.valorTotal && <p className="mt-1 text-sm text-critical">{errosCampos.valorTotal}</p>}
+              {valorTravado && (
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Vinculada a uma compra de matéria-prima — pra mudar o valor, exclua e crie a conta de novo.
+                </p>
+              )}
               {parcelado && quantidadeParcelas > 0 && valor > 0 && (
                 <p className="mt-1 text-sm text-ink-secondary">
                   ≈ {formatarMoeda(valor / quantidadeParcelas)} por parcela.
@@ -244,8 +343,92 @@ export default function ContasPage() {
                 )}
               </div>
             )}
+
+            {editandoId === null && tipo === "PAGAR" && (
+              <div className="sm:col-span-2">
+                <label className="flex items-center gap-2 text-base text-ink-secondary">
+                  <input
+                    type="checkbox"
+                    checked={compraMateriaPrima}
+                    onChange={(e) => setCompraMateriaPrima(e.target.checked)}
+                    className="h-4 w-4 rounded border-hairline"
+                  />
+                  Essa conta é compra de matéria-prima
+                </label>
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Ao marcar, cada item abaixo já dá entrada no estoque assim que a conta for criada.
+                </p>
+              </div>
+            )}
+
+            {editandoId === null && tipo === "PAGAR" && compraMateriaPrima && (
+              <div className="sm:col-span-2">
+                <Label>Itens da compra *</Label>
+                <div className="grid gap-2">
+                  {itensCompra.map((linha, index) => (
+                    <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_120px_auto] sm:items-end">
+                      <div className="col-span-2 sm:col-span-1">
+                        <Select
+                          value={linha.materiaPrimaId}
+                          onChange={(e) => atualizarLinhaCompra(index, { materiaPrimaId: Number(e.target.value) })}
+                        >
+                          <option value="">Selecione...</option>
+                          {materiasPrimasAgrupadas.map((grupo) => (
+                            <optgroup key={grupo.categoriaNome} label={grupo.categoriaNome}>
+                              {grupo.itens.map((mp) => (
+                                <option key={mp.id} value={mp.id}>
+                                  {mp.nome} ({mp.unidadeMedida})
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </Select>
+                      </div>
+                      <Input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        placeholder="Quantidade"
+                        value={linha.quantidade}
+                        onChange={(e) => atualizarLinhaCompra(index, { quantidade: Number(e.target.value) })}
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Valor"
+                        value={linha.valor}
+                        onChange={(e) => atualizarLinhaCompra(index, { valor: Number(e.target.value) })}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="col-span-2 sm:col-span-1"
+                        onClick={() => removerLinhaCompra(index)}
+                        disabled={itensCompra.length === 1}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() => setItensCompra((atual) => [...atual, { ...LINHA_ITEM_COMPRA_VAZIA }])}
+                >
+                  + Adicionar item
+                </Button>
+                <p className={`mt-2 text-sm ${somaCompraBate ? "text-ink-secondary" : "font-medium text-critical"}`}>
+                  Soma dos itens: {formatarMoeda(somaItensCompra)} de {formatarMoeda(valor)}
+                  {!somaCompraBate && " — precisa bater com o valor da conta pra salvar."}
+                </p>
+              </div>
+            )}
+
             <div className="sm:col-span-2">
-              <Button type="submit" disabled={salvando}>
+              <Button type="submit" disabled={salvando || (compraMateriaPrima && !compraValida)}>
                 {salvando
                   ? "Salvando..."
                   : editandoId !== null
@@ -301,6 +484,11 @@ export default function ContasPage() {
                       <span className="ml-2 rounded-full bg-surface-hover px-2 py-0.5 text-sm font-normal text-ink-secondary">
                         {c.numeroParcela}/{c.totalParcelas}
                       </span>
+                    )}
+                    {c.itensMateriaPrima && c.itensMateriaPrima.length > 0 && (
+                      <p className="mt-1 text-sm font-normal text-ink-secondary">
+                        🧵 {formatarItensCompra(c.itensMateriaPrima)}
+                      </p>
                     )}
                   </td>
                   <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(c.valor)}</td>
