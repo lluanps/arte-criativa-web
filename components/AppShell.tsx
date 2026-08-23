@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { AlertaContaAtrasada } from "@/components/AlertaContaAtrasada";
 import { AlertaEstoqueBaixo } from "@/components/AlertaEstoqueBaixo";
 import { Nav } from "@/components/Nav";
 import { obterSessao } from "@/lib/auth";
@@ -43,7 +44,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Nav />
-      <AlertaEstoqueBaixo />
+      {/* Canto único pros alertas flutuantes — cada um decide sozinho se tem algo pra
+          mostrar (retorna null se não), então empilhar aqui não deixa buraco quando só
+          um dos dois está ativo. Antes cada alerta tinha seu próprio `fixed` competindo
+          pelo mesmo canto; centralizar evita repetir esse tipo de bug. */}
+      <div className="fixed inset-x-4 bottom-4 z-[90] flex flex-col gap-4 sm:inset-x-auto sm:right-4 sm:w-96">
+        <AlertaContaAtrasada />
+        <AlertaEstoqueBaixo />
+      </div>
       <div className="min-w-0 flex-1">{children}</div>
     </>
   );

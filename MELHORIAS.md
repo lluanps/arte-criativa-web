@@ -7,9 +7,10 @@ Backlog de ideias levantadas em 2026-08-23, pra não perder o fio enquanto imple
 ## Rápidas de fazer
 
 - [x] **Filtro de categoria no seletor de matéria-prima da Ficha técnica** — hoje é um `<select>` simples com todas as matérias-primas. Reaproveita o cadastro de categoria que já existe. Só frontend, sem depender da API.
-- [ ] **Alerta de conta atrasada, como o de estoque baixo** — hoje "contas atrasadas" só aparece como número no dashboard do Financeiro. Um banner tipo o `AlertaEstoqueBaixo` chamando atenção assim que uma conta vence sem ser paga evita esquecer de pagar/cobrar.
+- [x] **Alerta de conta atrasada, como o de estoque baixo** — hoje "contas atrasadas" só aparece como número no dashboard do Financeiro. Um banner tipo o `AlertaEstoqueBaixo` chamando atenção assim que uma conta vence sem ser paga evita esquecer de pagar/cobrar.
 - [ ] **Fornecedor virar cadastro de verdade** — hoje é texto livre em cada matéria-prima (sem padronização: "Fornecedor X" ≠ "fornecedor x"). Virando cadastro (tipo Cliente/Canal), dá pra comparar preço do mesmo insumo entre fornecedores ao longo do tempo. Precisa de endpoint novo na API.
-- [ ] **Etiqueta / QR code de produto** — gerar e imprimir etiqueta com nome + preço (e QR opcional linkando pro produto) direto da tela de produto, pra facilitar venda física. Só frontend.
+- [x] **Etiqueta / QR code de produto** — gerar e imprimir etiqueta com nome + preço (e QR opcional linkando pro produto) direto da tela de produto, pra facilitar venda física. Só frontend.
+- [ ] **Mensagem amigável em conflito de edição (409)** — a API ganhou lock otimista (`@Version`) em Produto/MateriaPrima: um PUT que colidir bem no talho com outra escrita concorrente no mesmo registro agora pode devolver 409 em vez de sobrescrever silenciosamente. Raro na prática, mas hoje as telas de edição não tratam esse caso — mostrar algo tipo "alguém alterou isso, recarregue" em vez do erro genérico.
 
 ## Médias
 

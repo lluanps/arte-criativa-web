@@ -306,6 +306,35 @@ export function IconEye(props: IconProps) {
   );
 }
 
+export function IconPrinter(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M6 9V4h12v5" />
+      <rect x="4" y="9" width="16" height="8" rx="1.5" />
+      <path d="M6 14h12v6H6Z" />
+      <line x1="8" y1="12" x2="12" y2="12" />
+    </Base>
+  );
+}
+
+export function IconQrcode(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="3.5" y="3.5" width="6" height="6" rx="0.8" />
+      <rect x="14.5" y="3.5" width="6" height="6" rx="0.8" />
+      <rect x="3.5" y="14.5" width="6" height="6" rx="0.8" />
+      <circle cx="6.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="6.5" cy="17.5" r="1" fill="currentColor" stroke="none" />
+      <line x1="14.5" y1="15" x2="14.5" y2="20.5" />
+      <line x1="17.5" y1="15" x2="17.5" y2="17.5" />
+      <line x1="20.5" y1="15" x2="20.5" y2="20.5" />
+      <line x1="14.5" y1="20.5" x2="20.5" y2="20.5" />
+      <line x1="17.5" y1="20.5" x2="17.5" y2="18.5" />
+    </Base>
+  );
+}
+
 export function IconEyeOff(props: IconProps) {
   return (
     <Base {...props}>
