@@ -22,11 +22,25 @@ export function PageHeader({
   );
 }
 
-export function ErrorBanner({ mensagem }: { mensagem: string }) {
+export function ErrorBanner({
+  mensagem,
+  acao,
+}: {
+  mensagem: string;
+  /** Ação opcional (ex: "Recarregar dados" num conflito de edição concorrente). */
+  acao?: { label: string; onClick: () => void };
+}) {
   return (
     <div className="mb-5 flex items-start gap-3 rounded-xl bg-critical-soft px-5 py-4 text-base text-critical">
       <IconAlertTriangle className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={2} />
-      {mensagem}
+      <div className="min-w-0 flex-1">
+        <p>{mensagem}</p>
+        {acao && (
+          <button type="button" onClick={acao.onClick} className="mt-1.5 font-semibold underline hover:no-underline">
+            {acao.label}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -35,6 +35,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
   const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroConflito, setErroConflito] = useState(false);
 
   const [form, setForm] = useState<ProdutoRequest | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -92,6 +93,7 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
     if (!form) return;
     setSalvando(true);
     setErro(null);
+    setErroConflito(false);
     setErrosCampos({});
     try {
       const atualizado = await api.put<ProdutoResponse>(`/produtos/${id}`, form);
@@ -100,6 +102,10 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
       if (e instanceof ApiError) {
         setErro(e.message);
         setErrosCampos(e.campos ?? {});
+        // 409 = alguém mais salvou esse produto entre você abrir a tela e clicar em
+        // salvar (lock otimista via @Version) — sobrescrever cegamente perderia a
+        // mudança da outra pessoa, então oferece recarregar em vez de só reclamar.
+        setErroConflito(e.status === 409);
       } else {
         setErro("Erro ao salvar produto");
       }
@@ -226,7 +232,9 @@ export default function ProdutoDetalhePage({ params }: { params: Promise<{ id: s
         </Button>
       </div>
 
-      {erro && <ErrorBanner mensagem={erro} />}
+      {erro && (
+        <ErrorBanner mensagem={erro} acao={erroConflito ? { label: "Recarregar dados", onClick: carregar } : undefined} />
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Card>

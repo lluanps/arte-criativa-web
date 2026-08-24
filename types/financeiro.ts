@@ -39,9 +39,13 @@ export interface ContaRequest {
   valor: number;
   vencimento: string;
   /** Só em contas PAGAR: marca a conta como "compra de matéria-prima" e já dá
-   * entrada no estoque de cada item. A soma dos itens precisa bater com `valor`
-   * (o backend rejeita com 422 se não bater). */
+   * entrada no estoque de cada item. A soma dos itens + custosExtras precisa bater
+   * com `valor` (o backend rejeita com 422 se não bater) — o front calcula `valor`
+   * sozinho a partir desses dois, então na prática nunca diverge. */
   itensMateriaPrima?: ItemMateriaPrimaCompra[];
+  /** Custo da compra que não é de nenhuma matéria-prima específica (frete, taxas,
+   * etc.) — opcional, soma no `valor` calculado junto com os itens. */
+  custosExtras?: number;
 }
 
 /** Registra uma conta parcelada de uma vez: o backend gera `quantidadeParcelas`
@@ -53,8 +57,11 @@ export interface ContaParceladaRequest {
   valorTotal: number;
   quantidadeParcelas: number;
   primeiroVencimento: string;
-  /** Ver ContaRequest.itensMateriaPrima — soma dos itens compara contra `valorTotal`. */
+  /** Ver ContaRequest.itensMateriaPrima — soma dos itens + custosExtras compara
+   * contra `valorTotal`. */
   itensMateriaPrima?: ItemMateriaPrimaCompra[];
+  /** Ver ContaRequest.custosExtras. */
+  custosExtras?: number;
 }
 
 export interface ContaResponse {
@@ -74,6 +81,8 @@ export interface ContaResponse {
    * entrada no estoque); não dá pra editar o valor dessas contas depois. Numa conta
    * parcelada, o mesmo item aparece igual em todas as parcelas do grupo. */
   itensMateriaPrima: ItemMateriaPrimaCompra[];
+  /** Ver ContaRequest.custosExtras. Ausente/0 = sem custo extra. */
+  custosExtras?: number;
 }
 
 export interface DashboardFinanceiroResponse {

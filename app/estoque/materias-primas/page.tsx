@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
 import { useDebounced } from "@/lib/useDebounced";
 import {
+  arredondarQuantidade,
   MateriaPrimaDesejadaResponse,
   MateriaPrimaRequest,
   MateriaPrimaResponse,
@@ -328,11 +329,11 @@ export default function MateriasPrimasPage() {
                   <Input
                     id="quantidadeComprada"
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     required
                     value={form.quantidadeComprada}
-                    onChange={(e) => setForm({ ...form, quantidadeComprada: Number(e.target.value) })}
+                    onChange={(e) => setForm({ ...form, quantidadeComprada: arredondarQuantidade(Number(e.target.value), form.unidadeMedida) })}
                   />
                   {errosCampos.quantidadeComprada && (
                     <p className="mt-1 text-sm text-critical">{errosCampos.quantidadeComprada}</p>
@@ -361,10 +362,10 @@ export default function MateriasPrimasPage() {
                   <Input
                     id="estoqueMinimo"
                     type="number"
-                    step="0.001"
+                    step="1"
                     min="0"
                     value={form.estoqueMinimo}
-                    onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
+                    onChange={(e) => setForm({ ...form, estoqueMinimo: arredondarQuantidade(Number(e.target.value), form.unidadeMedida) })}
                   />
                 </div>
                 <div className="sm:col-span-2">

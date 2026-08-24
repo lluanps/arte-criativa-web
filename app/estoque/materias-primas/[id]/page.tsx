@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatarDataHora, formatarMoeda } from "@/lib/format";
 import {
+  arredondarQuantidade,
   MateriaPrimaAtualizacaoRequest,
   MateriaPrimaResponse,
   MotivoMovimentacaoMateriaPrima,
@@ -31,6 +32,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
   const [categorias, setCategorias] = useState<CategoriaMateriaPrimaResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroConflito, setErroConflito] = useState(false);
 
   const [form, setForm] = useState<MateriaPrimaAtualizacaoRequest | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -83,6 +85,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     if (!form) return;
     setSalvando(true);
     setErro(null);
+    setErroConflito(false);
     setErrosCampos({});
     try {
       const atualizado = await api.put<MateriaPrimaResponse>(`/materias-primas/${id}`, form);
@@ -91,6 +94,10 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
       if (e instanceof ApiError) {
         setErro(e.message);
         setErrosCampos(e.campos ?? {});
+        // 409 = alguém mais salvou essa matéria-prima entre você abrir a tela e clicar
+        // em salvar (lock otimista via @Version) — sobrescrever cegamente perderia a
+        // mudança da outra pessoa, então oferece recarregar em vez de só reclamar.
+        setErroConflito(e.status === 409);
       } else {
         setErro("Erro ao salvar matéria-prima");
       }
@@ -164,7 +171,9 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
         descricao={`Estoque atual: ${materiaPrima.estoqueAtual} ${materiaPrima.unidadeMedida} · Custo unitário: ${formatarMoeda(materiaPrima.custoUnitario)}`}
       />
 
-      {erro && <ErrorBanner mensagem={erro} />}
+      {erro && (
+        <ErrorBanner mensagem={erro} acao={erroConflito ? { label: "Recarregar dados", onClick: carregar } : undefined} />
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Card>
@@ -220,10 +229,10 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="estoqueMinimo"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 value={form.estoqueMinimo}
-                onChange={(e) => setForm({ ...form, estoqueMinimo: Number(e.target.value) })}
+                onChange={(e) => setForm({ ...form, estoqueMinimo: arredondarQuantidade(Number(e.target.value), form.unidadeMedida) })}
               />
             </div>
             <div className="sm:col-span-2">
@@ -280,11 +289,11 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               <Input
                 id="quantidade"
                 type="number"
-                step="0.001"
+                step="1"
                 min="0"
                 required
                 value={movForm.quantidade}
-                onChange={(e) => setMovForm({ ...movForm, quantidade: Number(e.target.value) })}
+                onChange={(e) => setMovForm({ ...movForm, quantidade: arredondarQuantidade(Number(e.target.value), materiaPrima.unidadeMedida) })}
               />
             </div>
             {movForm.tipo === "ENTRADA" && (

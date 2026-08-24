@@ -12,7 +12,7 @@ import {
   StatusConta,
   TipoConta,
 } from "@/types/financeiro";
-import { agruparMateriaPrimaPorCategoria, MateriaPrimaResponse } from "@/types/estoque";
+import { agruparMateriaPrimaPorCategoria, arredondarQuantidade, MateriaPrimaResponse } from "@/types/estoque";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 
@@ -35,10 +35,6 @@ interface LinhaItemCompra {
 }
 
 const LINHA_ITEM_COMPRA_VAZIA: LinhaItemCompra = { materiaPrimaId: "", quantidade: 0, valor: 0 };
-
-/** Diferença de até 1 centavo é tolerada (arredondamento) — abaixo disso considera
- * que a soma dos itens bate com o valor da conta. */
-const TOLERANCIA_SOMA = 0.01;
 
 export default function ContasPage() {
   const perguntar = useConfirm();
@@ -63,13 +59,24 @@ export default function ContasPage() {
   const [materiasPrimas, setMateriasPrimas] = useState<MateriaPrimaResponse[]>([]);
   const [compraMateriaPrima, setCompraMateriaPrima] = useState(false);
   const [itensCompra, setItensCompra] = useState<LinhaItemCompra[]>([{ ...LINHA_ITEM_COMPRA_VAZIA }]);
+  const [custosExtras, setCustosExtras] = useState(0);
   const [valorTravado, setValorTravado] = useState(false);
 
   const materiasPrimasAgrupadas = useMemo(() => agruparMateriaPrimaPorCategoria(materiasPrimas), [materiasPrimas]);
   const somaItensCompra = useMemo(() => itensCompra.reduce((soma, l) => soma + (Number(l.valor) || 0), 0), [itensCompra]);
   const itensCompraCompletos = itensCompra.length > 0 && itensCompra.every((l) => l.materiaPrimaId !== "" && l.quantidade > 0 && l.valor > 0);
-  const somaCompraBate = Math.abs(somaItensCompra - valor) < TOLERANCIA_SOMA;
-  const compraValida = !compraMateriaPrima || (itensCompraCompletos && somaCompraBate);
+  const valorCalculado = Math.round((somaItensCompra + custosExtras) * 100) / 100;
+  const compraValida = !compraMateriaPrima || itensCompraCompletos;
+  const valorCalculadoAtivo = editandoId === null && tipo === "PAGAR" && compraMateriaPrima;
+
+  // Com compra de matéria-prima marcada, "Valor" deixa de ser digitado — nasce sozinho
+  // da soma dos itens + custos extras, então nunca tem "soma não bate" pra conferir.
+  useEffect(() => {
+    if (editandoId === null && compraMateriaPrima) {
+      setValor(valorCalculado);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editandoId, compraMateriaPrima, valorCalculado]);
 
   async function carregar(tipoFiltro = filtroTipo) {
     setCarregando(true);
@@ -117,6 +124,7 @@ export default function ContasPage() {
     setErrosCampos({});
     setCompraMateriaPrima(false);
     setItensCompra([{ ...LINHA_ITEM_COMPRA_VAZIA }]);
+    setCustosExtras(0);
     setValorTravado(false);
   }
 
@@ -131,6 +139,7 @@ export default function ContasPage() {
     setErrosCampos({});
     setCompraMateriaPrima(false);
     setItensCompra([{ ...LINHA_ITEM_COMPRA_VAZIA }]);
+    setCustosExtras(0);
     setValorTravado((conta.itensMateriaPrima?.length ?? 0) > 0);
   }
 
@@ -159,7 +168,7 @@ export default function ContasPage() {
     setErrosCampos({});
 
     if (editandoId === null && compraMateriaPrima && !compraValida) {
-      setErro("Confira os itens da compra: todos precisam de matéria-prima, quantidade e valor, e a soma tem que bater com o valor da conta.");
+      setErro("Confira os itens da compra: todos precisam de matéria-prima, quantidade e valor.");
       return;
     }
 
@@ -169,6 +178,7 @@ export default function ContasPage() {
             .filter((l): l is LinhaItemCompra & { materiaPrimaId: number } => l.materiaPrimaId !== "")
             .map((l) => ({ materiaPrimaId: l.materiaPrimaId, quantidade: l.quantidade, valor: l.valor }))
         : undefined;
+    const custosExtrasRequest = editandoId === null && compraMateriaPrima ? custosExtras : undefined;
 
     setSalvando(true);
     try {
@@ -183,10 +193,11 @@ export default function ContasPage() {
           quantidadeParcelas,
           primeiroVencimento: vencimento,
           itensMateriaPrima,
+          custosExtras: custosExtrasRequest,
         };
         await api.post("/contas/parceladas", request);
       } else {
-        const request: ContaRequest = { tipo, descricao, valor, vencimento, itensMateriaPrima };
+        const request: ContaRequest = { tipo, descricao, valor, vencimento, itensMateriaPrima, custosExtras: custosExtrasRequest };
         await api.post("/contas", request);
       }
       resetarForm();
@@ -288,8 +299,14 @@ export default function ContasPage() {
                 step="0.01"
                 min="0"
                 required
-                disabled={valorTravado}
-                title={valorTravado ? "Não dá pra editar o valor de uma conta vinculada a compra de matéria-prima — exclua e crie de novo." : undefined}
+                disabled={valorTravado || valorCalculadoAtivo}
+                title={
+                  valorTravado
+                    ? "Não dá pra editar o valor de uma conta vinculada a compra de matéria-prima — exclua e crie de novo."
+                    : valorCalculadoAtivo
+                      ? "Calculado sozinho a partir dos itens da compra + custos extras, abaixo."
+                      : undefined
+                }
                 value={valor}
                 onChange={(e) => setValor(Number(e.target.value))}
               />
@@ -298,6 +315,11 @@ export default function ContasPage() {
               {valorTravado && (
                 <p className="mt-1 text-sm text-ink-secondary">
                   Vinculada a uma compra de matéria-prima — pra mudar o valor, exclua e crie a conta de novo.
+                </p>
+              )}
+              {valorCalculadoAtivo && (
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Calculado sozinho: soma dos itens da compra + custos extras (abaixo).
                 </p>
               )}
               {parcelado && quantidadeParcelas > 0 && valor > 0 && (
@@ -361,13 +383,25 @@ export default function ContasPage() {
               </div>
             )}
 
-            {editandoId === null && tipo === "PAGAR" && compraMateriaPrima && (
+            {valorCalculadoAtivo && (
               <div className="sm:col-span-2">
                 <Label>Itens da compra *</Label>
+                <p className="mb-2 text-sm text-ink-secondary">
+                  "Valor" de cada item é o total pago por ele, não o preço unitário (mesma ideia do "Valor pago" do
+                  cadastro de matéria-prima).
+                </p>
                 <div className="grid gap-2">
-                  {itensCompra.map((linha, index) => (
+                  {itensCompra.map((linha, index) => {
+                    const materiaPrimaSelecionada = materiasPrimas.find((mp) => mp.id === linha.materiaPrimaId);
+                    const unidadeSelecionada = materiaPrimaSelecionada?.unidadeMedida;
+                    const valorSugerido =
+                      materiaPrimaSelecionada && materiaPrimaSelecionada.custoUnitario > 0 && linha.quantidade > 0
+                        ? Math.round(linha.quantidade * materiaPrimaSelecionada.custoUnitario * 100) / 100
+                        : null;
+                    return (
                     <div key={index} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_110px_120px_auto] sm:items-end">
                       <div className="col-span-2 sm:col-span-1">
+                        {index === 0 && <Label className="text-sm">Matéria-prima</Label>}
                         <Select
                           value={linha.materiaPrimaId}
                           onChange={(e) => atualizarLinhaCompra(index, { materiaPrimaId: Number(e.target.value) })}
@@ -384,33 +418,54 @@ export default function ContasPage() {
                           ))}
                         </Select>
                       </div>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        placeholder="Quantidade"
-                        value={linha.quantidade}
-                        onChange={(e) => atualizarLinhaCompra(index, { quantidade: Number(e.target.value) })}
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Valor"
-                        value={linha.valor}
-                        onChange={(e) => atualizarLinhaCompra(index, { valor: Number(e.target.value) })}
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="col-span-2 sm:col-span-1"
-                        onClick={() => removerLinhaCompra(index)}
-                        disabled={itensCompra.length === 1}
-                      >
-                        Remover
-                      </Button>
+                      <div>
+                        {index === 0 && <Label className="text-sm">Quantidade</Label>}
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          placeholder="0"
+                          value={linha.quantidade}
+                          onChange={(e) =>
+                            atualizarLinhaCompra(index, { quantidade: arredondarQuantidade(Number(e.target.value), unidadeSelecionada) })
+                          }
+                        />
+                      </div>
+                      <div>
+                        {index === 0 && <Label className="text-sm">Valor (R$)</Label>}
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00"
+                          value={linha.valor}
+                          onChange={(e) => atualizarLinhaCompra(index, { valor: Number(e.target.value) })}
+                        />
+                        {valorSugerido !== null && valorSugerido !== linha.valor && (
+                          <button
+                            type="button"
+                            onClick={() => atualizarLinhaCompra(index, { valor: valorSugerido })}
+                            title="Preenche o valor com quantidade × custo unitário atual dessa matéria-prima"
+                            className="mt-1 block text-sm text-ink-secondary hover:text-accent hover:underline"
+                          >
+                            sugestão: {formatarMoeda(valorSugerido)}
+                          </button>
+                        )}
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="w-full"
+                          onClick={() => removerLinhaCompra(index)}
+                          disabled={itensCompra.length === 1}
+                        >
+                          Remover
+                        </Button>
+                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <Button
                   type="button"
@@ -420,9 +475,27 @@ export default function ContasPage() {
                 >
                   + Adicionar item
                 </Button>
-                <p className={`mt-2 text-sm ${somaCompraBate ? "text-ink-secondary" : "font-medium text-critical"}`}>
-                  Soma dos itens: {formatarMoeda(somaItensCompra)} de {formatarMoeda(valor)}
-                  {!somaCompraBate && " — precisa bater com o valor da conta pra salvar."}
+
+                <div className="mt-4 max-w-[220px]">
+                  <Label htmlFor="custosExtras" className="text-sm">
+                    Custos extras (frete, taxas, etc.)
+                  </Label>
+                  <Input
+                    id="custosExtras"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    value={custosExtras}
+                    onChange={(e) => setCustosExtras(Number(e.target.value))}
+                  />
+                  <p className="mt-1 text-sm text-ink-secondary">Opcional — custo da compra que não é de nenhum item específico.</p>
+                </div>
+
+                <p className="mt-3 text-sm text-ink-secondary">
+                  Itens: {formatarMoeda(somaItensCompra)}
+                  {custosExtras > 0 && ` + custos extras: ${formatarMoeda(custosExtras)}`} = valor da conta:{" "}
+                  <strong className="text-ink">{formatarMoeda(valorCalculado)}</strong>
                 </p>
               </div>
             )}
