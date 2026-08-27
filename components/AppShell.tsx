@@ -7,7 +7,7 @@ import { AlertaEstoqueBaixo } from "@/components/AlertaEstoqueBaixo";
 import { Nav } from "@/components/Nav";
 import { obterSessao } from "@/lib/auth";
 
-const ROTAS_PUBLICAS = ["/login", "/esqueci-senha", "/redefinir-senha"];
+const ROTAS_PUBLICAS = ["/login", "/esqueci-senha", "/redefinir-senha", "/registrar-empresa"];
 
 /**
  * Decide o "esqueleto" da página com base na rota: nas rotas públicas de auth, não
