@@ -31,6 +31,13 @@ export interface ReceitaItemResponse {
   unidadeMedidaMateriaPrima: string;
   /** quantidade (convertida) × custoUnitarioMateriaPrima. */
   subtotalCusto: number;
+  /** Estoque atual desta matéria-prima, na unidade dela — mesma unidade de
+   * custoUnitarioMateriaPrima. */
+  estoqueAtualMateriaPrima: number;
+  /** Quantas unidades do produto dá pra fazer considerando só esta matéria-prima
+   * isoladamente (o "gargalo" dela). Ver ReceitaResponse.quantidadeProduzivelComEstoqueAtual
+   * pro mínimo entre todos os itens, que é o que de fato limita a receita inteira. */
+  unidadesProduziveisComEsteItem: number | null;
 }
 
 export interface ReceitaResponse {
@@ -55,6 +62,12 @@ export interface ReceitaResponse {
   precoMercadoMax: number | null;
   precoMercadoAtualizadoEm: string | null;
   criadoEm: string;
+  /** Quantas unidades do produto dá pra produzir agora, considerando o estoque atual de
+   * TODAS as matérias-primas da receita — o mínimo entre itens[].unidadesProduziveisComEsteItem
+   * (a matéria-prima mais escassa manda). null só se não der pra calcular. */
+  quantidadeProduzivelComEstoqueAtual: number | null;
+  /** Nome da matéria-prima que é o gargalo (a que gerou o mínimo acima). */
+  materiaPrimaLimitanteNome: string | null;
 }
 
 export interface ProducaoRequest {

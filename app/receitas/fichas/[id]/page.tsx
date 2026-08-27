@@ -199,6 +199,8 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                 <th className="px-5 py-3">Quantidade</th>
                 <th className="px-5 py-3">Custo unitário</th>
                 <th className="px-5 py-3">Subtotal</th>
+                <th className="px-5 py-3">Estoque atual</th>
+                <th className="px-5 py-3">Dá pra fazer</th>
               </tr>
             </thead>
             <tbody>
@@ -212,10 +214,34 @@ export default function FichaTecnicaDetalhePage({ params }: { params: Promise<{ 
                     {formatarMoeda(item.custoUnitarioMateriaPrima)}/{item.unidadeMedidaMateriaPrima}
                   </td>
                   <td className="px-5 py-3 font-medium tabular-figures text-ink">{formatarMoeda(item.subtotalCusto)}</td>
+                  <td className="px-5 py-3 text-ink-secondary tabular-figures">
+                    {item.estoqueAtualMateriaPrima} {item.unidadeMedidaMateriaPrima}
+                  </td>
+                  <td className="px-5 py-3 font-medium tabular-figures text-ink">
+                    {item.unidadesProduziveisComEsteItem !== null ? `${item.unidadesProduziveisComEsteItem} un.` : "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </Card>
+      )}
+
+      {receita && receita.quantidadeProduzivelComEstoqueAtual !== null && (
+        <Card className="mb-8">
+          <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Dá pra produzir com o estoque atual</p>
+          <p
+            className={`mt-1.5 text-2xl font-extrabold tabular-figures ${
+              receita.quantidadeProduzivelComEstoqueAtual === 0 ? "text-critical" : "text-ink"
+            }`}
+          >
+            {receita.quantidadeProduzivelComEstoqueAtual} {receita.quantidadeProduzivelComEstoqueAtual === 1 ? "unidade" : "unidades"}
+          </p>
+          {receita.materiaPrimaLimitanteNome && (
+            <p className="mt-1 text-sm text-ink-secondary">
+              Limitado pelo estoque de <strong className="text-ink">{receita.materiaPrimaLimitanteNome}</strong>
+            </p>
+          )}
         </Card>
       )}
 
