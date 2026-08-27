@@ -15,7 +15,7 @@ import {
   TipoMovimentacao,
   UNIDADES_MEDIDA,
 } from "@/types/estoque";
-import { CategoriaMateriaPrimaResponse } from "@/types/cadastros";
+import { CategoriaMateriaPrimaResponse, FornecedorResponse } from "@/types/cadastros";
 import { Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
@@ -30,6 +30,7 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
   const [materiaPrima, setMateriaPrima] = useState<MateriaPrimaResponse | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<MovimentacaoResponse[]>([]);
   const [categorias, setCategorias] = useState<CategoriaMateriaPrimaResponse[]>([]);
+  const [fornecedores, setFornecedores] = useState<FornecedorResponse[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [erroConflito, setErroConflito] = useState(false);
@@ -53,10 +54,11 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
     setCarregando(true);
     setErro(null);
     try {
-      const [mp, movs, cats] = await Promise.all([
+      const [mp, movs, cats, forns] = await Promise.all([
         api.get<MateriaPrimaResponse>(`/materias-primas/${id}`),
         api.get<MovimentacaoResponse[]>(`/materias-primas/${id}/movimentacoes`),
         api.get<CategoriaMateriaPrimaResponse[]>("/categorias-materia-prima"),
+        api.get<FornecedorResponse[]>("/fornecedores"),
       ]);
       setMateriaPrima(mp);
       setForm({
@@ -64,10 +66,11 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
         categoriaId: mp.categoriaId,
         unidadeMedida: mp.unidadeMedida,
         estoqueMinimo: mp.estoqueMinimo,
-        fornecedor: mp.fornecedor ?? "",
+        fornecedorId: mp.fornecedorId,
       });
       setMovimentacoes(movs);
       setCategorias(cats);
+      setFornecedores(forns);
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : "Erro ao carregar matéria-prima");
     } finally {
@@ -236,8 +239,16 @@ export default function MateriaPrimaDetalhePage({ params }: { params: Promise<{ 
               />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="fornecedor">Fornecedor</Label>
-              <Input id="fornecedor" value={form.fornecedor ?? ""} onChange={(e) => setForm({ ...form, fornecedor: e.target.value })} />
+              <Label htmlFor="fornecedorId">Fornecedor</Label>
+              <SelectComCriacao
+                id="fornecedorId"
+                itens={fornecedores}
+                value={form.fornecedorId ?? ""}
+                onChange={(id) => setForm({ ...form, fornecedorId: id === "" ? null : id })}
+                onCriar={(nome) => api.post<FornecedorResponse>("/fornecedores", { nome })}
+                onCriado={(item) => setFornecedores((atual) => [...atual, item])}
+                novoPlaceholder="Nome do fornecedor"
+              />
             </div>
             <div className="flex items-center justify-between border-t border-hairline pt-4 sm:col-span-2">
               <Button type="button" variant="danger" onClick={excluir} disabled={excluindo}>

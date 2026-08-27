@@ -12,7 +12,7 @@ import {
   MateriaPrimaResponse,
   UNIDADES_MEDIDA,
 } from "@/types/estoque";
-import { CategoriaMateriaPrimaResponse } from "@/types/cadastros";
+import { CategoriaMateriaPrimaResponse, FornecedorResponse } from "@/types/cadastros";
 import { PaginaResponse } from "@/types/common";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Paginacao, Select } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -33,7 +33,7 @@ interface FormState {
   quantidadeComprada: number;
   valorPago: number;
   estoqueMinimo: number;
-  fornecedor: string;
+  fornecedorId: number | null;
 }
 
 const FORM_VAZIO: FormState = {
@@ -43,7 +43,7 @@ const FORM_VAZIO: FormState = {
   quantidadeComprada: 0,
   valorPago: 0,
   estoqueMinimo: 0,
-  fornecedor: "",
+  fornecedorId: null,
 };
 
 export default function MateriasPrimasPage() {
@@ -60,6 +60,7 @@ export default function MateriasPrimasPage() {
 
   const [desejadas, setDesejadas] = useState<MateriaPrimaDesejadaResponse[]>([]);
   const [categorias, setCategorias] = useState<CategoriaMateriaPrimaResponse[]>([]);
+  const [fornecedores, setFornecedores] = useState<FornecedorResponse[]>([]);
 
   const [busca, setBusca] = useState("");
   const buscaDebounced = useDebounced(busca);
@@ -83,6 +84,14 @@ export default function MateriasPrimasPage() {
       setCategorias(await api.get<CategoriaMateriaPrimaResponse[]>("/categorias-materia-prima"));
     } catch {
       // Categorias são complementares (filtro/seletor) — se falhar, a listagem principal já mostra erro.
+    }
+  }
+
+  async function carregarFornecedores() {
+    try {
+      setFornecedores(await api.get<FornecedorResponse[]>("/fornecedores"));
+    } catch {
+      // Fornecedores são complementares (seletor) — se falhar, a listagem principal já mostra erro.
     }
   }
 
@@ -123,6 +132,7 @@ export default function MateriasPrimasPage() {
   useEffect(() => {
     carregarDesejadas();
     carregarCategorias();
+    carregarFornecedores();
   }, []);
 
   function resetarForm() {
@@ -167,7 +177,7 @@ export default function MateriasPrimasPage() {
           quantidadeComprada: form.quantidadeComprada,
           valorPago: form.valorPago,
           estoqueMinimo: form.estoqueMinimo,
-          fornecedor: form.fornecedor,
+          fornecedorId: form.fornecedorId,
         };
         await api.post("/materias-primas", request);
         // Se o nome bate com algo da lista de compras, a compra "completou" aquele
@@ -369,11 +379,15 @@ export default function MateriasPrimasPage() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="fornecedor">Fornecedor</Label>
-                  <Input
-                    id="fornecedor"
-                    value={form.fornecedor}
-                    onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
+                  <Label htmlFor="fornecedorId">Fornecedor</Label>
+                  <SelectComCriacao
+                    id="fornecedorId"
+                    itens={fornecedores}
+                    value={form.fornecedorId ?? ""}
+                    onChange={(id) => setForm({ ...form, fornecedorId: id === "" ? null : id })}
+                    onCriar={(nome) => api.post<FornecedorResponse>("/fornecedores", { nome })}
+                    onCriado={(item) => setFornecedores((atual) => [...atual, item])}
+                    novoPlaceholder="Nome do fornecedor"
                   />
                 </div>
               </>
@@ -479,6 +493,7 @@ export default function MateriasPrimasPage() {
                 <tr>
                   {cabecalho("nome", "Nome")}
                   <th className="px-5 py-4">Categoria</th>
+                  <th className="px-5 py-4">Fornecedor</th>
                   {cabecalho("unidadeMedida", "Unidade")}
                   {cabecalho("custoUnitario", "Custo unitário")}
                   {cabecalho("estoqueAtual", "Estoque")}
@@ -498,6 +513,7 @@ export default function MateriasPrimasPage() {
                         </Link>
                       </td>
                       <td className="px-5 py-4 text-ink-secondary">{mp.categoriaNome ?? "—"}</td>
+                      <td className="px-5 py-4 text-ink-secondary">{mp.fornecedorNome ?? "—"}</td>
                       <td className="px-5 py-4 text-ink-secondary">{mp.unidadeMedida}</td>
                       <td className="px-5 py-4 text-ink-secondary">{formatarMoeda(mp.custoUnitario)}</td>
                       <td className="px-5 py-4">
