@@ -52,3 +52,19 @@ export interface ClienteRequest {
   telefone?: string | null;
   email?: string | null;
 }
+
+/** Fornecedor de matéria-prima — antes era texto livre em cada matéria-prima (sem
+ * padronização: "Fornecedor X" ≠ "fornecedor x"), virou cadastro de verdade. */
+export interface FornecedorResponse {
+  id: number;
+  nome: string;
+  telefone: string | null;
+  observacao: string | null;
+  criadoEm: string;
+}
+
+export interface FornecedorRequest {
+  nome: string;
+  telefone?: string | null;
+  observacao?: string | null;
+}

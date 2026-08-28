@@ -41,7 +41,8 @@ export interface MateriaPrimaResponse {
   custoUnitario: number;
   estoqueAtual: number;
   estoqueMinimo: number;
-  fornecedor: string | null;
+  fornecedorId: number | null;
+  fornecedorNome: string | null;
   criadoEm: string;
   atualizadoEm: string;
 }
@@ -82,7 +83,7 @@ export interface MateriaPrimaRequest {
   quantidadeComprada: number;
   valorPago: number;
   estoqueMinimo: number;
-  fornecedor?: string | null;
+  fornecedorId?: number | null;
 }
 
 /** Editar uma matéria-prima já cadastrada — só metadados. Custo unitário e estoque não
@@ -92,7 +93,7 @@ export interface MateriaPrimaAtualizacaoRequest {
   categoriaId?: number | null;
   unidadeMedida: string;
   estoqueMinimo: number;
-  fornecedor?: string | null;
+  fornecedorId?: number | null;
 }
 
 /** Unidades reconhecidas pelo backend (UnidadeMedida.deTexto) pra conversão automática

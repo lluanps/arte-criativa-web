@@ -297,6 +297,17 @@ export function IconCamera(props: IconProps) {
   );
 }
 
+export function IconTruck(props: IconProps) {
+  return (
+    <Base {...props}>
+      <rect x="2.5" y="7.5" width="11" height="9" rx="1" />
+      <path d="M13.5 10.5H17.5L20.5 13.5V16.5H13.5V10.5Z" />
+      <circle cx="7" cy="18" r="1.6" />
+      <circle cx="17" cy="18" r="1.6" />
+    </Base>
+  );
+}
+
 export function IconEye(props: IconProps) {
   return (
     <Base {...props}>

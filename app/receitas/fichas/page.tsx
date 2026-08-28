@@ -299,6 +299,7 @@ export default function FichasTecnicasPage() {
                 <th className="px-5 py-4">Rendimento</th>
                 <th className="px-5 py-4">Custo total/un.</th>
                 <th className="px-5 py-4">Margem</th>
+                <th className="px-5 py-4">Dá pra produzir</th>
                 <th className="px-5 py-4"></th>
               </tr>
             </thead>
@@ -317,6 +318,15 @@ export default function FichasTecnicasPage() {
                     <Badge tone={tomDaMargem(r.margemPercentual)}>
                       {r.margemPercentual !== null ? `${r.margemPercentual}%` : "—"}
                     </Badge>
+                  </td>
+                  <td className="px-5 py-4 text-ink-secondary tabular-figures">
+                    {r.quantidadeProduzivelComEstoqueAtual !== null ? (
+                      <Badge tone={r.quantidadeProduzivelComEstoqueAtual === 0 ? "danger" : "default"}>
+                        {r.quantidadeProduzivelComEstoqueAtual} un.
+                      </Badge>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="px-5 py-4 text-right">
                     <Link href={`/receitas/fichas/${r.id}`} className="text-ink-secondary hover:underline">

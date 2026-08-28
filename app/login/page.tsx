@@ -81,6 +81,9 @@ function LoginForm() {
             <Link href="/esqueci-senha" className="text-center text-sm font-medium text-ink-secondary hover:text-ink">
               Esqueci minha senha
             </Link>
+            <Link href="/registrar-empresa" className="text-center text-sm font-medium text-ink-secondary hover:text-ink">
+              Ainda não tenho conta — criar empresa
+            </Link>
           </form>
         </Card>
       </div>

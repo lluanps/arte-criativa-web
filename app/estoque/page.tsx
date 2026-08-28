@@ -1,11 +1,12 @@
 import { PageHeader } from "@/components/ui";
 import Link from "next/link";
-import { IconBox, IconCandle, IconTag } from "@/components/Icon";
+import { IconBox, IconCandle, IconTag, IconTruck } from "@/components/Icon";
 
 const secoes = [
   { nome: "Produtos", href: "/estoque/produtos", descricao: "Produtos finais, preço de venda e estoque atual", Icon: IconCandle },
   { nome: "Matérias-primas", href: "/estoque/materias-primas", descricao: "Insumos usados na produção, custo e estoque", Icon: IconBox },
   { nome: "Categorias", href: "/estoque/categorias", descricao: "Categorias usadas para organizar os produtos", Icon: IconTag },
+  { nome: "Fornecedores", href: "/estoque/fornecedores", descricao: "Fornecedores de matéria-prima e contato", Icon: IconTruck },
 ];
 
 export default function EstoquePage() {
