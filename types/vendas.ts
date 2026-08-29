@@ -4,10 +4,16 @@ export interface VendaItemRequest {
   precoUnitario?: number | null;
 }
 
+export type StatusVenda = "PENDENTE" | "EM_PRODUCAO" | "PRONTO" | "ENTREGUE";
+
 export interface VendaRequest {
   clienteId?: number | null;
   canalId?: number | null;
   itens: VendaItemRequest[];
+  /** Preenchida = encomenda (nasce PENDENTE); ausente/null = venda de balcão. */
+  dataEntregaPrevista?: string | null;
+  /** Só aplicável junto de dataEntregaPrevista. */
+  valorSinal?: number | null;
 }
 
 export interface VendaItemResponse {
@@ -29,4 +35,13 @@ export interface VendaResponse {
   itens: VendaItemResponse[];
   dataVenda: string;
   criadoEm: string;
+  dataEntregaPrevista: string | null;
+  status: StatusVenda;
+  valorSinal: number;
+  valorSaldo: number;
+  entregaAtrasada: boolean;
+}
+
+export interface ReagendarEntregaRequest {
+  novaDataEntrega: string;
 }

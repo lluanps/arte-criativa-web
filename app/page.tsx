@@ -5,6 +5,8 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { buscarItensEstoqueBaixo, ItemEstoqueBaixo } from "@/lib/estoque";
 import { dataLocalISO, formatarData, formatarMoeda, parseDataLocal } from "@/lib/format";
+import { buscarEncomendasEmAtencao, ItemEncomendaAtencao } from "@/lib/vendas";
+import { corDoStatusVenda, labelDoStatusVenda } from "@/lib/statusVenda";
 import { ContaResponse, DashboardFinanceiroResponse, StatusConta } from "@/types/financeiro";
 import { VendaResponse } from "@/types/vendas";
 import { Badge, Card, EmptyState, ErrorBanner, StatCard } from "@/components/ui";
@@ -63,6 +65,7 @@ export default function Home() {
   const [contasAtencao, setContasAtencao] = useState<ContaAtencao[]>([]);
   const [vendasDoMes, setVendasDoMes] = useState<VendaResponse[]>([]);
   const [itensEstoqueBaixo, setItensEstoqueBaixo] = useState<ItemEstoqueBaixo[]>([]);
+  const [encomendasAtencao, setEncomendasAtencao] = useState<ItemEncomendaAtencao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -73,11 +76,12 @@ export default function Home() {
       try {
         const inicioMes = primeiroDiaDoMes();
         const hoje = dataLocalISO();
-        const [dashboard, contas, vendas, estoqueBaixo] = await Promise.all([
+        const [dashboard, contas, vendas, estoqueBaixo, encomendasEmAtencao] = await Promise.all([
           api.get<DashboardFinanceiroResponse>(`/financeiro/dashboard?inicio=${inicioMes}&fim=${hoje}`),
           api.get<ContaResponse[]>("/contas"),
           api.get<VendaResponse[]>("/vendas"),
           buscarItensEstoqueBaixo(),
+          buscarEncomendasEmAtencao(),
         ]);
 
         setDashboardFinanceiro(dashboard);
@@ -92,6 +96,7 @@ export default function Home() {
         setVendasDoMes(vendas.filter((v) => new Date(v.dataVenda) >= inicioMesDate));
 
         setItensEstoqueBaixo(estoqueBaixo);
+        setEncomendasAtencao(encomendasEmAtencao);
       } catch (e) {
         setErro(e instanceof ApiError ? e.message : "Erro ao carregar o resumo");
       } finally {
@@ -104,6 +109,7 @@ export default function Home() {
 
   const totalVendidoNoMes = vendasDoMes.reduce((soma, v) => soma + v.valorTotal, 0);
   const contasAtrasadas = contasAtencao.filter((c) => c.status === "ATRASADO");
+  const entregasAtrasadas = encomendasAtencao.filter((e) => e.entregaAtrasada);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-16">
@@ -138,7 +144,7 @@ export default function Home() {
         <p className="mt-10 text-base text-ink-secondary">Carregando resumo...</p>
       ) : dashboardFinanceiro ? (
         <div className="mt-10">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               label="Saldo no mês"
               valor={formatarMoeda(dashboardFinanceiro.saldo)}
@@ -155,9 +161,14 @@ export default function Home() {
               valor={String(itensEstoqueBaixo.length)}
               tone={itensEstoqueBaixo.length > 0 ? "warning" : "default"}
             />
+            <StatCard
+              label="Entregas atrasadas"
+              valor={String(entregasAtrasadas.length)}
+              tone={entregasAtrasadas.length > 0 ? "danger" : "default"}
+            />
           </div>
 
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <div className="mt-6 grid gap-5 lg:grid-cols-3">
             <Card>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-ink">Contas que precisam de atenção</h2>
@@ -210,6 +221,34 @@ export default function Home() {
                         </p>
                       </div>
                       <IconAlertTriangle className="h-4 w-4 shrink-0 text-warning" strokeWidth={2.2} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+
+            <Card>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-ink">Encomendas</h2>
+                <Link href="/vendas/encomendas" className="flex items-center gap-1 text-sm text-ink-secondary hover:underline">
+                  Ver todas <IconArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              {encomendasAtencao.length === 0 ? (
+                <EmptyState mensagem="Nenhuma encomenda atrasada ou com entrega nos próximos dias." />
+              ) : (
+                <ul>
+                  {encomendasAtencao.slice(0, 5).map((item) => (
+                    <li key={item.chave} className="flex items-center justify-between gap-3 border-t border-hairline py-2.5 first:border-0 first:pt-0">
+                      <div className="min-w-0">
+                        <Link href={item.href} className="block truncate font-medium text-ink hover:underline">
+                          {item.clienteNome ?? `Venda #${item.id}`}
+                        </Link>
+                        <p className="text-sm text-ink-secondary">
+                          {formatarMoeda(item.valorSaldo)} de saldo · entrega em {formatarData(item.dataEntregaPrevista)}
+                        </p>
+                      </div>
+                      <Badge tone={corDoStatusVenda(item)}>{labelDoStatusVenda(item)}</Badge>
                     </li>
                   ))}
                 </ul>

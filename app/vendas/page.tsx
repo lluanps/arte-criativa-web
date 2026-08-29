@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import { formatarDataHora, formatarMoeda } from "@/lib/format";
+import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/format";
 import { ProdutoResponse } from "@/types/estoque";
 import { VendaRequest, VendaResponse } from "@/types/vendas";
 import { CanalVendaResponse, ClienteResponse } from "@/types/cadastros";
 import { ReceitaResponse } from "@/types/producao";
 import { Badge, Button, Card, EmptyState, ErrorBanner, Input, Label, PageHeader, Select } from "@/components/ui";
 import { SelectComCriacao } from "@/components/SelectComCriacao";
+import { corDoStatusVenda, labelDoStatusVenda } from "@/lib/statusVenda";
 import { IconEye, IconEyeOff } from "@/components/Icon";
 
 interface LinhaItem {
@@ -58,6 +59,8 @@ export default function VendasPage() {
   const [canalId, setCanalId] = useState<number | "">("");
   const [itens, setItens] = useState<LinhaItem[]>([{ ...LINHA_VAZIA }]);
   const [descontoGeral, setDescontoGeral] = useState(0);
+  const [dataEntregaPrevista, setDataEntregaPrevista] = useState("");
+  const [valorSinal, setValorSinal] = useState(0);
   const [salvando, setSalvando] = useState(false);
   /** Lucro/custo/margem são informação sensível (não é pra cliente ver na tela durante
    * a negociação) — por isso vêm escondidos por padrão, nunca persistido (sempre volta
@@ -215,6 +218,8 @@ export default function VendasPage() {
     setCanalId("");
     setItens([{ ...LINHA_VAZIA }]);
     setDescontoGeral(0);
+    setDataEntregaPrevista("");
+    setValorSinal(0);
     setMostrarForm(false);
   }
 
@@ -236,6 +241,8 @@ export default function VendasPage() {
         quantidade: linha.quantidade,
         precoUnitario: linha.precoUnitario,
       })),
+      dataEntregaPrevista: dataEntregaPrevista || null,
+      valorSinal: dataEntregaPrevista ? valorSinal : null,
     };
 
     setSalvando(true);
@@ -265,6 +272,9 @@ export default function VendasPage() {
             </Link>
             <Link href="/vendas/relatorio" className="text-base font-semibold text-ink-secondary hover:underline">
               Relatório
+            </Link>
+            <Link href="/vendas/encomendas" className="text-base font-semibold text-ink-secondary hover:underline">
+              Encomendas
             </Link>
             <Button onClick={() => setMostrarForm((v) => !v)}>{mostrarForm ? "Cancelar" : "Nova venda"}</Button>
           </div>
@@ -301,6 +311,38 @@ export default function VendasPage() {
                   novoPlaceholder="Instagram, loja física..."
                 />
               </div>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="dataEntregaPrevista">Data de entrega combinada</Label>
+                <Input
+                  id="dataEntregaPrevista"
+                  type="date"
+                  value={dataEntregaPrevista}
+                  onChange={(e) => setDataEntregaPrevista(e.target.value)}
+                />
+                <p className="mt-1 text-sm text-ink-secondary">
+                  Preenchida = encomenda, com status e prazo de entrega. Vazia = venda de balcão, igual hoje.
+                </p>
+              </div>
+              {dataEntregaPrevista && (
+                <div>
+                  <Label htmlFor="valorSinal">Sinal / entrada</Label>
+                  <Input
+                    id="valorSinal"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={valorSinal}
+                    onChange={(e) => setValorSinal(Number(e.target.value))}
+                  />
+                  <p className="mt-1 text-sm text-ink-secondary">
+                    Só esse valor é lançado no financeiro agora — o saldo entra quando a encomenda for marcada como
+                    entregue. Deixe 0 se ainda não recebeu nada.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -471,6 +513,7 @@ export default function VendasPage() {
                 <th className="px-5 py-4">Canal</th>
                 <th className="px-5 py-4">Itens</th>
                 <th className="px-5 py-4">Total</th>
+                <th className="px-5 py-4">Entrega</th>
                 <th className="px-5 py-4"></th>
               </tr>
             </thead>
@@ -482,6 +525,16 @@ export default function VendasPage() {
                   <td className="px-5 py-4 text-ink-secondary">{venda.canalNome ?? "—"}</td>
                   <td className="px-5 py-4 text-ink-secondary">{venda.itens.length}</td>
                   <td className="px-5 py-4 font-medium text-ink">{formatarMoeda(venda.valorTotal)}</td>
+                  <td className="px-5 py-4">
+                    {venda.dataEntregaPrevista ? (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-ink-secondary">{formatarData(venda.dataEntregaPrevista)}</span>
+                        <Badge tone={corDoStatusVenda(venda)}>{labelDoStatusVenda(venda)}</Badge>
+                      </div>
+                    ) : (
+                      <span className="text-ink-faint">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-right">
                     <Link href={`/vendas/${venda.id}`} className="text-ink-secondary hover:underline">
                       Ver

@@ -4,9 +4,10 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
-import { formatarDataHora, formatarMoeda } from "@/lib/format";
-import { VendaResponse } from "@/types/vendas";
-import { Button, Card, ErrorBanner, PageHeader } from "@/components/ui";
+import { dataLocalISO, formatarData, formatarDataHora, formatarMoeda } from "@/lib/format";
+import { ReagendarEntregaRequest, VendaResponse } from "@/types/vendas";
+import { corDoStatusVenda, labelDoStatusVenda, proximoStatusVenda } from "@/lib/statusVenda";
+import { Badge, Button, Card, ErrorBanner, Input, Label, PageHeader } from "@/components/ui";
 import { useConfirm } from "@/components/ConfirmProvider";
 
 export default function VendaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,23 +19,80 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [avancando, setAvancando] = useState(false);
+  const [novaDataEntrega, setNovaDataEntrega] = useState("");
+  const [reagendando, setReagendando] = useState(false);
 
-  useEffect(() => {
+  async function carregarVenda() {
     setCarregando(true);
     setErro(null);
-    api
-      .get<VendaResponse>(`/vendas/${id}`)
-      .then(setVenda)
-      .catch((e) => setErro(e instanceof ApiError ? e.message : "Erro ao carregar venda"))
-      .finally(() => setCarregando(false));
+    try {
+      const dados = await api.get<VendaResponse>(`/vendas/${id}`);
+      setVenda(dados);
+      setNovaDataEntrega(dados.dataEntregaPrevista ?? "");
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao carregar venda");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  useEffect(() => {
+    carregarVenda();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const proximoStatus = venda ? proximoStatusVenda(venda.status) : null;
+
+  async function avancarStatus() {
+    if (!venda) return;
+    if (venda.valorSaldo > 0 && proximoStatus === "ENTREGUE") {
+      const confirmacao = await perguntar({
+        titulo: `Avançar pra "${labelDoStatusVenda({ status: "ENTREGUE", entregaAtrasada: false })}"?`,
+        descricao: `Isso vai gerar um lançamento financeiro do saldo pendente (${formatarMoeda(venda.valorSaldo)}).`,
+        acoes: [
+          { id: "cancelar", label: "Cancelar", variant: "secondary" },
+          { id: "avancar", label: "Avançar", variant: "primary" },
+        ],
+      });
+      if (confirmacao !== "avancar") return;
+    }
+
+    setAvancando(true);
+    setErro(null);
+    try {
+      const atualizada = await api.post<VendaResponse>(`/vendas/${id}/avancar-status`, {});
+      setVenda(atualizada);
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao avançar status");
+    } finally {
+      setAvancando(false);
+    }
+  }
+
+  async function reagendarEntrega(e: React.FormEvent) {
+    e.preventDefault();
+    if (!novaDataEntrega) return;
+
+    setReagendando(true);
+    setErro(null);
+    try {
+      const request: ReagendarEntregaRequest = { novaDataEntrega };
+      const atualizada = await api.post<VendaResponse>(`/vendas/${id}/reagendar-entrega`, request);
+      setVenda(atualizada);
+    } catch (e) {
+      setErro(e instanceof ApiError ? e.message : "Erro ao reagendar entrega");
+    } finally {
+      setReagendando(false);
+    }
+  }
 
   async function excluir() {
     const confirmacao = await perguntar({
       titulo: "Excluir esta venda?",
       descricao:
-        "A quantidade de cada item volta pro estoque e o lançamento financeiro de receita gerado por ela é removido. " +
-        "Essa ação não pode ser desfeita.",
+        "A quantidade de cada item volta pro estoque e o(s) lançamento(s) financeiro(s) de receita gerado(s) por ela " +
+        "(sinal e/ou saldo) são removidos. Essa ação não pode ser desfeita.",
       tone: "danger",
       acoes: [
         { id: "cancelar", label: "Cancelar", variant: "secondary" },
@@ -73,6 +131,54 @@ export default function VendaDetalhePage({ params }: { params: Promise<{ id: str
       />
 
       {erro && <ErrorBanner mensagem={erro} />}
+
+      {venda.dataEntregaPrevista && (
+        <Card className="mb-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-ink-faint">Encomenda</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <Badge tone={corDoStatusVenda(venda)}>{labelDoStatusVenda(venda)}</Badge>
+                <span className="text-base text-ink-secondary">
+                  entrega combinada pra {formatarData(venda.dataEntregaPrevista)}
+                </span>
+              </div>
+              <p className="mt-2 text-base text-ink-secondary">
+                Sinal recebido: <strong className="text-ink">{formatarMoeda(venda.valorSinal)}</strong> · Saldo a
+                receber:{" "}
+                <strong className={venda.valorSaldo > 0 ? "text-warning" : "text-good"}>
+                  {formatarMoeda(venda.valorSaldo)}
+                </strong>
+              </p>
+            </div>
+            {proximoStatus && (
+              <Button onClick={avancarStatus} disabled={avancando}>
+                {avancando
+                  ? "Avançando..."
+                  : `Avançar para ${labelDoStatusVenda({ status: proximoStatus, entregaAtrasada: false })}`}
+              </Button>
+            )}
+          </div>
+
+          {proximoStatus && (
+            <form onSubmit={reagendarEntrega} className="mt-5 flex flex-wrap items-end gap-3 border-t border-hairline pt-4">
+              <div>
+                <Label htmlFor="novaDataEntrega">Reagendar entrega</Label>
+                <Input
+                  id="novaDataEntrega"
+                  type="date"
+                  min={dataLocalISO()}
+                  value={novaDataEntrega}
+                  onChange={(e) => setNovaDataEntrega(e.target.value)}
+                />
+              </div>
+              <Button type="submit" variant="secondary" disabled={reagendando || !novaDataEntrega}>
+                {reagendando ? "Salvando..." : "Salvar nova data"}
+              </Button>
+            </form>
+          )}
+        </Card>
+      )}
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-base">

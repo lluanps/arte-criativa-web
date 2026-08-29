@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AlertaContaAtrasada } from "@/components/AlertaContaAtrasada";
+import { AlertaEncomendaAtrasada } from "@/components/AlertaEncomendaAtrasada";
 import { AlertaEstoqueBaixo } from "@/components/AlertaEstoqueBaixo";
 import { Nav } from "@/components/Nav";
 import { obterSessao } from "@/lib/auth";
@@ -50,6 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           pelo mesmo canto; centralizar evita repetir esse tipo de bug. */}
       <div className="fixed inset-x-4 bottom-4 z-[90] flex flex-col gap-4 sm:inset-x-auto sm:right-4 sm:w-96">
         <AlertaContaAtrasada />
+        <AlertaEncomendaAtrasada />
         <AlertaEstoqueBaixo />
       </div>
       <div className="min-w-0 flex-1">{children}</div>
